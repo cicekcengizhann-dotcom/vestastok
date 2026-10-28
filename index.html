@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Klinik Hasta Onam Takip Portalı</title>
+  <title>Vesta Klinik - Hasta Onam Takip Portalı</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -16,7 +16,7 @@
 </head>
 <body class="text-slate-800 antialiased min-h-screen flex flex-col">
 
-  <!-- 1. YÜKLENİYOR EKRANI (Oturum durumu kontrol edilirken titremeyi önler) -->
+  <!-- 1. OTURUM YÜKLENİYOR EKRANI -->
   <div id="authLoadingScreen" class="fixed inset-0 bg-slate-50 z-50 flex flex-col items-center justify-center">
     <div class="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
     <p class="text-sm font-semibold text-slate-600">Oturum durumu doğrulanıyor...</p>
@@ -31,7 +31,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
           </svg>
         </div>
-        <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Klinik Giriş Portalı</h2>
+        <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Vesta Klinik Giriş</h2>
         <p class="text-xs text-slate-500">Hasta onam takip sistemine erişmek için giriş yapın</p>
       </div>
 
@@ -43,7 +43,7 @@
             type="email"
             required
             autocomplete="email"
-            placeholder="ornek@klinik.com"
+            placeholder="ornek@vestaklinik.com"
             class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
           />
         </div>
@@ -73,9 +73,9 @@
     </div>
   </div>
 
-  <!-- 3. ANA UYGULAMA (Giriş yapıldıktan sonra açılır) -->
+  <!-- 3. ANA UYGULAMA PANELİ -->
   <div id="appView" class="hidden flex-col min-h-screen">
-    <!-- ÜST BAR -->
+    <!-- Üst Bar -->
     <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         <div class="flex items-center gap-3">
@@ -85,7 +85,7 @@
             </svg>
           </div>
           <div>
-            <h1 class="text-base sm:text-lg font-bold text-slate-900 leading-tight">Hasta Onam Takip Sistemi</h1>
+            <h1 class="text-base sm:text-lg font-bold text-slate-900 leading-tight">Vesta Klinik Onam Portalı</h1>
             <div class="flex items-center gap-2 text-xs text-slate-500">
               <span id="syncIndicator" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
               <span id="syncStatusText">Veritabanına bağlanılıyor...</span>
@@ -108,14 +108,13 @@
             <span class="hidden sm:inline">Tek Hasta Ekle</span>
           </button>
 
-          <button onclick="openModal('bulkModal')" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition shadow-xs shadow-indigo-200">
+          <button onclick="openModal('bulkModal')" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs sm:text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition shadow-xs shadow-indigo-200">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
             </svg>
             <span>Toplu Aktar (6.000+)</span>
           </button>
 
-          <!-- Kullanıcı Bilgisi ve Çıkış Butonu -->
           <div class="h-6 w-px bg-slate-200 hidden sm:block"></div>
           <div class="flex items-center gap-2">
             <span id="userEmailBadge" class="hidden lg:inline-block text-xs font-semibold text-slate-600 bg-slate-100 px-2.5 py-1.5 rounded-lg border border-slate-200"></span>
@@ -129,9 +128,9 @@
       </div>
     </header>
 
-    <!-- ANA İÇERİK -->
+    <!-- Ana İçerik -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
-      <!-- İSTATİSTİK KARTLARI -->
+      <!-- İstatistik Kartları -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
           <div>
@@ -179,7 +178,7 @@
         </div>
       </div>
 
-      <!-- İLERLEME ÇUBUĞU -->
+      <!-- İlerleme Çubuğu -->
       <div class="bg-white px-5 py-3.5 rounded-xl border border-slate-200 shadow-xs">
         <div class="flex justify-between text-xs font-medium text-slate-600 mb-1.5">
           <span>Genel Onam Tamamlanma Oranı</span>
@@ -190,7 +189,7 @@
         </div>
       </div>
 
-      <!-- ARAMA VE FİLTRELEME -->
+      <!-- Arama ve Filtreler -->
       <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
         <div class="relative flex-1">
           <svg class="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -229,7 +228,7 @@
             <option value="updated-desc">Son İşlem Yapılanlar</option>
           </select>
 
-          <button onclick="forceFullSync()" title="Sunucudan Tam Senkronizasyon Yap" class="p-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-lg border border-slate-200 transition">
+          <button onclick="forceFullSync()" title="Sunucudan Yeniden Senkronize Et" class="p-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-lg border border-slate-200 transition">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
             </svg>
@@ -237,11 +236,11 @@
         </div>
       </div>
 
-      <!-- TABLO -->
+      <!-- Tablo -->
       <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
         <div class="px-5 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-xs font-medium text-slate-500">
           <span id="resultCountText">0 hasta listeleniyor</span>
-          <span>Durumu değiştirmek için sağdaki butona tıklayın</span>
+          <span>Durumu değiştirmek için ilgili butona tıklayın</span>
         </div>
 
         <div class="overflow-x-auto">
@@ -299,13 +298,13 @@
     </div>
   </div>
 
-  <!-- TOPLU HASTA AKTARIM MODALI (6.000+ KAYIT) -->
+  <!-- TOPLU HASTA AKTARIM MODALI (6.000+ İÇİN BATCH) -->
   <div id="bulkModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-xl border border-slate-200 flex flex-col max-h-[90vh]">
       <div class="flex items-center justify-between pb-3 border-b border-slate-100">
         <div>
           <h3 class="text-base font-bold text-slate-900">Toplu Hasta Aktarım Sihirbazı (6.000+ Hasta)</h3>
-          <p class="text-xs text-slate-500 mt-0.5">Excel veya Word'deki isim listesini alt alta yapıştırın.</p>
+          <p class="text-xs text-slate-500 mt-0.5">Excel'den kopyaladığınız isim listesini alt alta buraya yapıştırın.</p>
         </div>
         <button onclick="closeModal('bulkModal')" class="text-slate-400 hover:text-slate-600">✕</button>
       </div>
@@ -361,7 +360,7 @@
     <span id="toastText">İşlem başarılı</span>
   </div>
 
-  <!-- FIREBASE VE UYGULAMA MOTORU -->
+  <!-- FIREBASE & UYGULAMA MOTORU -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
     import {
@@ -385,15 +384,16 @@
     } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
     // ============================================================================
-    // 1. FIREBASE CONFIG
+    // VESTA KLİNİK FIREBASE CONFIG
     // ============================================================================
     const firebaseConfig = {
-      apiKey: "AIzaSy...",
-      authDomain: "PROJE_ADINIZ.firebaseapp.com",
-      projectId: "PROJE_ADINIZ",
-      storageBucket: "PROJE_ADINIZ.appspot.com",
-      messagingSenderId: "SENDER_ID",
-      appId: "APP_ID"
+      apiKey: "AIzaSyDi_c1cBUB34AZLX3YAOsLNMH40T0cPYXU",
+      authDomain: "vesta-klinik.firebaseapp.com",
+      projectId: "vesta-klinik",
+      storageBucket: "vesta-klinik.firebasestorage.app",
+      messagingSenderId: "297313379397",
+      appId: "1:297313379397:web:381694ffeb97695f122f2c",
+      measurementId: "G-YNW6QFF7XD"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -401,7 +401,6 @@
     const db = getFirestore(app);
     const patientsCol = collection(db, "patients");
 
-    // Bellek Değişkenleri
     let allPatientsMap = new Map();
     let filteredPatients = [];
     let currentFilter = "all";
@@ -409,7 +408,7 @@
     let deltaUnsubscribe = null;
 
     // ============================================================================
-    // 2. AUTHENTICATION VE OTURUM DÖNGÜSÜ
+    // AUTHENTICATION DÖNGÜSÜ
     // ============================================================================
     const authLoadingScreen = document.getElementById("authLoadingScreen");
     const loginView = document.getElementById("loginView");
@@ -419,14 +418,12 @@
     onAuthStateChanged(auth, async (user) => {
       authLoadingScreen.classList.add("hidden");
       if (user) {
-        // Oturum Açıldı
         loginView.classList.add("hidden");
         appView.classList.remove("hidden");
         appView.classList.add("flex");
         userEmailBadge.textContent = user.email;
         await initSync();
       } else {
-        // Oturum Kapalı
         if (deltaUnsubscribe) deltaUnsubscribe();
         allPatientsMap.clear();
         appView.classList.add("hidden");
@@ -457,9 +454,9 @@
         if (err.code === "auth/invalid-credential" || err.code === "auth/wrong-password" || err.code === "auth/user-not-found") {
           errorMsg.textContent = "Hatalı e-posta veya şifre girdiniz!";
         } else if (err.code === "auth/too-many-requests") {
-          errorMsg.textContent = "Çok fazla başarısız deneme yaptınız. Lütfen biraz bekleyin.";
+          errorMsg.textContent = "Çok fazla başarısız deneme yapıldı. Lütfen bekleyin.";
         } else {
-          errorMsg.textContent = "Giriş yapılamadı: " + err.message;
+          errorMsg.textContent = "Giriş başarısız: " + err.message;
         }
       } finally {
         submitBtn.disabled = false;
@@ -474,7 +471,7 @@
     };
 
     // ============================================================================
-    // 3. TÜRKÇE NORMALİZASYON VE INDEXEDDB YÖNETİMİ
+    // TÜRKÇE NORMALİZASYON VE INDEXEDDB ÖNBELLEĞİ
     // ============================================================================
     function normalizeTurkish(str) {
       if (!str) return "";
@@ -491,7 +488,7 @@
         .replace(/\s+/g, " ");
     }
 
-    const IDB_NAME = "HastaOnamCacheDB_v2";
+    const IDB_NAME = "VestaOnamCacheDB_v1";
     const IDB_STORE = "patientsStore";
 
     function openLocalDB() {
@@ -533,7 +530,7 @@
           store.put(item);
         }
       } catch (e) {
-        console.warn("Önbellek kayıt uyarısı:", e);
+        console.warn("Önbellek kayıt:", e);
       }
     }
 
@@ -550,17 +547,17 @@
         const idb = await openLocalDB();
         const tx = idb.transaction(IDB_STORE, "readwrite");
         tx.objectStore(IDB_STORE).clear();
-        localStorage.removeItem("onam_last_sync_ts_v2");
+        localStorage.removeItem("vesta_last_sync_ts");
       } catch {}
     }
 
     // ============================================================================
-    // 4. KOTA DOSTU DELTA SENKRONİZASYON
+    // DELTA SENKRONİZASYON (KOTA DOSTU)
     // ============================================================================
     async function initSync() {
-      setSyncStatus("loading", "Önbellek kontrol ediliyor...");
+      setSyncStatus("loading", "Önbellek taranıyor...");
       const cachedList = await loadFromLocalDB();
-      let lastSync = Number(localStorage.getItem("onam_last_sync_ts_v2") || 0);
+      let lastSync = Number(localStorage.getItem("vesta_last_sync_ts") || 0);
 
       if (cachedList.length > 0 && lastSync > 0) {
         for (const p of cachedList) {
@@ -576,7 +573,7 @@
 
     async function performInitialFullFetch() {
       try {
-        setSyncStatus("loading", "Sunucudan hastalar çekiliyor...");
+        setSyncStatus("loading", "Hastalar Firestore'dan çekiliyor...");
         const snap = await getDocs(patientsCol);
         const fetched = [];
         let maxTs = Date.now();
@@ -597,13 +594,13 @@
         });
 
         await saveManyToLocalDB(fetched);
-        localStorage.setItem("onam_last_sync_ts_v2", String(maxTs));
+        localStorage.setItem("vesta_last_sync_ts", String(maxTs));
         updateStatsAndRender();
-        setSyncStatus("online", `${allPatientsMap.size.toLocaleString("tr-TR")} hasta senkronize edildi`);
+        setSyncStatus("online", `${allPatientsMap.size.toLocaleString("tr-TR")} hasta bağlandı (Canlı)`);
         listenDeltaChanges(maxTs);
       } catch (err) {
         console.error(err);
-        setSyncStatus("error", "Veritabanına erişim yetkisi reddedildi!");
+        setSyncStatus("error", "Veritabanı erişimi engellendi! Firestore Rules ayarını kontrol edin.");
       }
     }
 
@@ -613,7 +610,7 @@
       deltaUnsubscribe = onSnapshot(q, async (snapshot) => {
         if (snapshot.empty) return;
         const changedItems = [];
-        let newestTs = Number(localStorage.getItem("onam_last_sync_ts_v2") || sinceTimestamp);
+        let newestTs = Number(localStorage.getItem("vesta_last_sync_ts") || sinceTimestamp);
 
         snapshot.docChanges().forEach((change) => {
           const data = change.doc.data();
@@ -638,7 +635,7 @@
         if (changedItems.length > 0) {
           await saveManyToLocalDB(changedItems);
         }
-        localStorage.setItem("onam_last_sync_ts_v2", String(newestTs));
+        localStorage.setItem("vesta_last_sync_ts", String(newestTs));
         updateStatsAndRender(false);
         setSyncStatus("online", `${allPatientsMap.size.toLocaleString("tr-TR")} hasta (Canlı)`);
       });
@@ -647,11 +644,11 @@
     window.forceFullSync = async function () {
       await clearLocalDB();
       await performInitialFullFetch();
-      showToast("Tüm veriler sunucudan tazelendi.");
+      showToast("Tüm liste veritabanından yeniden çekildi.");
     };
 
     // ============================================================================
-    // 5. İŞLEM METOTLARI (DURUM DEĞİŞTİR, SİL, TEK EKLE)
+    // İŞLEMLER
     // ============================================================================
     window.toggleConsentStatus = async function (patientId) {
       const existing = allPatientsMap.get(patientId);
@@ -694,10 +691,10 @@
         allPatientsMap.delete(patientId);
         await removeFromLocalDB(patientId);
         updateStatsAndRender(false);
-        showToast(`${existing.fullName} silindi.`);
+        showToast(`${existing.fullName} kaydı silindi.`);
       } catch (err) {
         console.error(err);
-        showToast("Hasta silinirken bir hata oluştu.");
+        showToast("Silme işlemi başarısız.");
       }
     };
 
@@ -706,7 +703,7 @@
       const statusInput = document.getElementById("singleStatusInput");
       const fullName = nameInput.value.trim().replace(/\s+/g, " ");
       if (!fullName) {
-        alert("Lütfen hasta adını ve soyadını yazın.");
+        alert("Lütfen hasta adını ve soyadını girin.");
         return;
       }
 
@@ -737,10 +734,10 @@
         nameInput.value = "";
         closeModal("singleModal");
         updateStatsAndRender(true);
-        showToast(`${fullName} başarıyla eklendi.`);
+        showToast(`${fullName} kaydedildi.`);
       } catch (err) {
         console.error(err);
-        alert("Ekleme sırasında hata oluştu: " + err.message);
+        alert("Kayıt hatası: " + err.message);
       } finally {
         btn.disabled = false;
         btn.textContent = "Kaydet";
@@ -748,7 +745,7 @@
     };
 
     // ============================================================================
-    // 6. 6.000+ TOPLU HASTA AKTARIM SİHİRBAZI
+    // 6.000+ TOPLU HASTA AKTARIM (BATCH)
     // ============================================================================
     window.updateBulkCounter = function () {
       const raw = document.getElementById("bulkTextarea").value;
@@ -790,7 +787,7 @@
       }
 
       if (toInsert.length === 0) {
-        alert("Listedeki hastaların tamamı zaten sistemde mevcut.");
+        alert("Yapıştırılan listedeki tüm hastalar zaten sistemde kayıtlı.");
         return;
       }
 
@@ -843,12 +840,12 @@
           allPatientsMap.set(item.id, item);
         }
         await saveManyToLocalDB(newlyAdded);
-        localStorage.setItem("onam_last_sync_ts_v2", String(Date.now()));
+        localStorage.setItem("vesta_last_sync_ts", String(Date.now()));
 
         updateStatsAndRender(true);
         document.getElementById("bulkTextarea").value = "";
         updateBulkCounter();
-        showToast(`${uploadedCount.toLocaleString("tr-TR")} hasta başarıyla sisteme aktarıldı!`);
+        showToast(`${uploadedCount.toLocaleString("tr-TR")} hasta veritabanına aktarıldı!`);
         setTimeout(() => {
           closeModal("bulkModal");
           progressBox.classList.add("hidden");
@@ -863,7 +860,7 @@
     };
 
     // ============================================================================
-    // 7. ARAMA, FİLTRELEME VE GÖRÜNTÜLEME
+    // ARAMA VE TABLO RENDER
     // ============================================================================
     window.handleSearch = function () {
       const val = document.getElementById("searchInput").value;
@@ -1028,7 +1025,7 @@
     }
 
     // ============================================================================
-    // 8. DIŞA AKTARMA VE YARDIMCILAR
+    // DIŞA AKTAR VE YARDIMCILAR
     // ============================================================================
     window.exportCSV = function () {
       if (filteredPatients.length === 0) {
@@ -1049,7 +1046,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `hasta_onam_listesi_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.download = `vesta_hasta_onam_listesi_${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
     };
