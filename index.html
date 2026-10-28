@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Vesta Klinik | Hasta Onam & Takip Portalı</title>
+  <title>Vesta Klinik | Hasta Onam & Analiz Portalı</title>
   
-  <!-- Fontlar: Inter & JetBrains Mono -->
+  <!-- Tipografi: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
-  <!-- Tailwind CSS & Özel Vesta Renk Paleti -->
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -38,9 +38,10 @@
     }
   </script>
 
-  <!-- Lucide Simgeleri & SheetJS (Excel Motoru) -->
+  <!-- Lucide Simgeleri, SheetJS ve Chart.js (Grafik Motoru) -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
   <style>
     body { font-feature-settings: "cv02", "cv03", "cv04", "cv11"; -webkit-font-smoothing: antialiased; }
@@ -50,27 +51,12 @@
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
     ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     .signature-canvas { touch-action: none; cursor: crosshair; }
-
-    /* Resmi A4 Yazdırma Kuralları */
-    @media print {
-      body * { visibility: hidden; }
-      #printContainer, #printContainer * { visibility: visible; }
-      #printContainer {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        padding: 24mm 20mm;
-        background: white !important;
-      }
-      .no-print { display: none !important; }
-    }
   </style>
 </head>
 
 <body class="h-full flex flex-col text-slate-900 selection:bg-vesta-800 selection:text-white">
 
-  <!-- ==================== 1. OTURUM KONTROL EKRANI (AÇILIŞ) ==================== -->
+  <!-- ==================== 1. OTURUM KONTROL EKRANI ==================== -->
   <div id="authLoadingScreen" class="fixed inset-0 bg-slate-50 z-50 flex flex-col items-center justify-center gap-3">
     <img src="logo.png" alt="Vesta Klinik" class="h-14 w-auto object-contain animate-pulse mb-2" onerror="this.src='https://dummyimage.com/160x60/0c525b/ffffff&text=VESTA'" />
     <div class="flex items-center gap-2 text-xs font-semibold text-vesta-800 uppercase tracking-widest">
@@ -79,13 +65,13 @@
     </div>
   </div>
 
-  <!-- ==================== 2. GİRİŞ YAPMA EKRANI (LOGIN VIEW) ==================== -->
+  <!-- ==================== 2. GİRİŞ EKRANI ==================== -->
   <div id="loginView" class="hidden min-h-screen flex flex-col justify-center items-center px-4 bg-slate-100">
     <div class="w-full max-w-sm bg-white border border-slate-200/90 rounded-2xl p-8 shadow-xl">
       <div class="flex flex-col items-center text-center pb-5 mb-5 border-b border-slate-100">
         <img src="logo.png" alt="Vesta Klinik" class="h-16 w-auto object-contain mb-3" onerror="this.src='https://dummyimage.com/160x60/0c525b/ffffff&text=VESTA'" />
         <h1 class="text-base font-extrabold text-vesta-950 tracking-tight">VESTA KLİNİK</h1>
-        <p class="text-xs text-slate-500 font-medium">Hasta Onam & Arşiv Portalı</p>
+        <p class="text-xs text-slate-500 font-medium">Hasta Onam & Klinik Analitik Portalı</p>
       </div>
 
       <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
@@ -118,7 +104,7 @@
         <button
           type="submit"
           id="loginSubmitBtn"
-          class="w-full h-10 bg-vesta-800 hover:bg-vesta-900 active:scale-[0.98] text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+          class="w-full h-10 bg-vesta-800 hover:bg-vesta-900 active:scale-[0.98] text-white text-xs font-bold rounded-lg transition shadow-sm flex items-center justify-center gap-2 cursor-pointer"
         >
           <span>Portala Giriş Yap</span>
         </button>
@@ -127,20 +113,19 @@
     <p class="mt-4 text-[11px] text-slate-400 font-medium">© Vesta Ağız ve Diş Sağlığı Polikliniği</p>
   </div>
 
-  <!-- ==================== 3. ANA UYGULAMA (APP VIEW) ==================== -->
+  <!-- ==================== 3. ANA ÇALIŞMA ALANI ==================== -->
   <div id="appView" class="hidden flex-col min-h-screen">
 
-    <!-- Üst Bar (Header) -->
-    <header class="bg-white border-b border-slate-200/90 sticky top-0 z-30 shadow-xs no-print">
+    <!-- Üst Header Bar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between gap-4">
         
-        <!-- Logo & Canlı Eşitleme Durumu -->
         <div class="flex items-center gap-4">
           <div class="flex items-center gap-3">
             <img src="logo.png" alt="Vesta Klinik" class="h-11 w-auto object-contain" onerror="this.src='https://dummyimage.com/140x50/0c525b/ffffff&text=VESTA'" />
             <div class="hidden sm:block border-l border-slate-200 pl-3">
               <h1 class="text-sm font-extrabold text-vesta-950 tracking-tight leading-none">VESTA KLİNİK</h1>
-              <p class="text-[10px] font-bold text-slate-400 tracking-wider uppercase mt-0.5">Hasta Onam Portalı</p>
+              <p class="text-[10px] font-bold text-slate-400 tracking-wider uppercase mt-0.5">Hasta Onam & Yönetim Sistemi</p>
             </div>
           </div>
 
@@ -150,8 +135,12 @@
           </div>
         </div>
 
-        <!-- Butonlar ve Profil -->
         <div class="flex items-center gap-2">
+          <button onclick="toggleAnalyticsView()" id="toggleAnalyticsBtn" class="h-9 px-3 text-xs font-semibold text-vesta-800 bg-vesta-50 border border-vesta-200 hover:bg-vesta-100 rounded-lg transition inline-flex items-center gap-1.5 shadow-2xs">
+            <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">Grafikleri Gizle/Göster</span>
+          </button>
+
           <button onclick="exportExcel()" class="h-9 px-3 text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition inline-flex items-center gap-1.5 shadow-2xs">
             <i data-lucide="download" class="w-3.5 h-3.5 text-slate-500"></i>
             <span class="hidden sm:inline">Excel İndir</span>
@@ -180,15 +169,15 @@
     </header>
 
     <!-- Ana Çalışma Gövdesi -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-5 no-print">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-5">
 
       <!-- ==================== ANALİZ VE RAPORLAMA KARTLARI ==================== -->
       <section class="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
         <!-- Toplam Hasta Portföyü -->
-        <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200/90 shadow-2xs flex flex-col justify-between">
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col justify-between">
           <div class="flex items-center justify-between text-slate-500">
             <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Toplam Portföy</span>
-            <div class="p-2 rounded-lg bg-slate-100 text-slate-600"><i data-lucide="users" class="w-4 h-4"></i></div>
+            <div class="p-2 rounded-xl bg-slate-100 text-slate-600"><i data-lucide="users" class="w-4 h-4"></i></div>
           </div>
           <div class="mt-2.5 flex items-baseline gap-1.5">
             <span id="statTotal" class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight tabular">0</span>
@@ -197,9 +186,9 @@
         </div>
 
         <!-- Onam Formu İmzalayanlar -->
-        <div onclick="setFilter('signed')" class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200/90 shadow-2xs flex flex-col justify-between cursor-pointer hover:border-emerald-300 transition-colors">
+        <div onclick="setFilter('signed')" class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col justify-between cursor-pointer hover:border-emerald-300 transition-colors">
           <div class="flex items-center justify-between text-emerald-600">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Onam Verenler</span>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Onay Verenler</span>
             <span id="statSignedPct" class="font-mono text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">%0</span>
           </div>
           <div class="mt-2.5 flex items-baseline gap-1.5">
@@ -209,7 +198,7 @@
         </div>
 
         <!-- Onam Formu İmzalamayanlar -->
-        <div onclick="setFilter('unsigned')" class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200/90 shadow-2xs flex flex-col justify-between cursor-pointer hover:border-rose-300 transition-colors">
+        <div onclick="setFilter('unsigned')" class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col justify-between cursor-pointer hover:border-rose-300 transition-colors">
           <div class="flex items-center justify-between text-rose-600">
             <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">İmza Bekleyenler</span>
             <span id="statUnsignedPct" class="font-mono text-xs font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full">%0</span>
@@ -220,8 +209,8 @@
           </div>
         </div>
 
-        <!-- Uyum ve Tamamlanma Yüzdesi -->
-        <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200/90 shadow-2xs flex flex-col justify-between">
+        <!-- KVKK Uyum & Tamamlanma Yüzdesi -->
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col justify-between">
           <div class="flex items-center justify-between text-vesta-800">
             <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">KVKK Uyum Oranı</span>
             <span id="progressBarLabel" class="font-mono text-xs font-bold text-vesta-900 tabular">0 / 0</span>
@@ -235,6 +224,62 @@
         </div>
       </section>
 
+      <!-- ==================== GRAFİK VE ANALİZ PANELİ (CHART.JS) ==================== -->
+      <section id="analyticsSection" class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <!-- Donut Dağılım Grafiği -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+              <i data-lucide="pie-chart" class="w-4 h-4 text-vesta-700"></i>
+              Onam Dağılım Oranı
+            </h3>
+            <span class="text-[10px] text-slate-400 font-semibold uppercase">Canlı Veri</span>
+          </div>
+          <div class="relative flex-1 flex items-center justify-center min-h-[210px]">
+            <canvas id="statusChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Günlük / Haftalık Trend Grafiği -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col lg:col-span-2">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+              <i data-lucide="trending-up" class="w-4 h-4 text-emerald-600"></i>
+              Son 7 Günlük Onam İşlem Hacmi
+            </h3>
+            <span class="text-[10px] text-slate-400 font-semibold uppercase">Günlük Aktivite</span>
+          </div>
+          <div class="relative flex-1 min-h-[210px]">
+            <canvas id="trendChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== TOPLU İŞLEM ÇUBUĞU (SEÇİLDİĞİNDE AÇILIR) ==================== -->
+      <section id="bulkActionBar" class="hidden bg-slate-900 text-white px-5 py-3.5 rounded-2xl shadow-lg flex flex-wrap items-center justify-between gap-3 animate-in fade-in duration-200">
+        <div class="flex items-center gap-3">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="text-xs font-bold font-mono"><strong id="selectedCountText" class="text-white font-extrabold">0</strong> hasta seçildi</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="bulkSetStatus(true)" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1.5">
+            <i data-lucide="check-check" class="w-3.5 h-3.5"></i>
+            Toplu İmzalandı Yap
+          </button>
+          <button onclick="bulkSetStatus(false)" class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold transition flex items-center gap-1.5">
+            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+            Toplu İmzalamadı Yap
+          </button>
+          <button onclick="bulkDelete()" class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition flex items-center gap-1.5">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            Toplu Sil
+          </button>
+          <button onclick="clearSelection()" class="px-2.5 py-1.5 text-xs text-slate-400 hover:text-white font-semibold">
+            Vazgeç
+          </button>
+        </div>
+      </section>
+
       <!-- ==================== ARAMA VE FİLTRE KONTROLLERİ ==================== -->
       <section class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <!-- Arama Input (Cmd+K / Ctrl+K Destekli) -->
@@ -243,7 +288,7 @@
           <input
             id="searchInput"
             type="text"
-            placeholder="Hasta adı veya soyadı ile canlı filtrele..."
+            placeholder="Hasta adı veya soyadı ile filtrele... (Cmd+K)"
             oninput="handleSearch()"
             class="w-full h-10 pl-10 pr-20 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-vesta-600/20 focus:border-vesta-600 transition"
           />
@@ -255,7 +300,7 @@
           </div>
         </div>
 
-        <!-- Sekmeler, Sıralama ve Senkron Butonu -->
+        <!-- Sekmeler, Sıralama ve Yeniden Eşitleme -->
         <div class="flex items-center gap-2">
           <div class="inline-flex h-10 bg-slate-200/60 p-1 rounded-xl text-xs font-semibold text-slate-600">
             <button onclick="setFilter('all')" id="filter-all" class="px-3.5 rounded-lg bg-white text-slate-900 shadow-2xs transition">Tümü</button>
@@ -264,9 +309,9 @@
           </div>
 
           <select id="sortSelect" onchange="renderList(true)" class="h-10 px-3 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-vesta-700">
+            <option value="updated-desc">Son İşlem (Yeni → Eski)</option>
             <option value="name-asc">A → Z Sırala</option>
             <option value="name-desc">Z → A Sırala</option>
-            <option value="updated-desc">Son İşlem</option>
           </select>
 
           <button onclick="forceFullSync()" title="Veritabanını Yeniden Eşitle" class="h-10 w-10 flex items-center justify-center bg-white border border-slate-200 rounded-xl text-slate-600 hover:text-vesta-800 hover:bg-slate-50 transition shadow-2xs">
@@ -278,33 +323,37 @@
       <!-- ==================== HASTA VERİ TABLOSU ==================== -->
       <section class="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-2xs flex flex-col">
         <div class="px-5 py-3 bg-slate-50/70 border-b border-slate-200/80 flex items-center justify-between text-xs font-semibold text-slate-500">
-          <span id="resultCountText" class="tabular font-mono">0 kayıt listeleniyor</span>
-          <span class="hidden sm:inline">İmza almak için 'Onam İmzalat' butonuna tıklayınız</span>
+          <div class="flex items-center gap-2">
+            <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(event)" class="rounded border-slate-300 text-vesta-800 focus:ring-vesta-700 cursor-pointer" />
+            <span id="resultCountText" class="tabular font-mono">0 kayıt listeleniyor</span>
+          </div>
+          <span class="hidden sm:inline text-slate-400">Durumu tek tıkla değiştirmek için butona veya rozete tıklayın</span>
         </div>
 
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse text-xs">
             <thead>
               <tr class="border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50/40">
-                <th class="py-3 px-5 w-14">#</th>
+                <th class="py-3 px-4 w-10 text-center">Seç</th>
+                <th class="py-3 px-4 w-12 text-center">#</th>
                 <th class="py-3 px-5">Hasta Adı Soyadı</th>
-                <th class="py-3 px-5 w-56">Onam Durumu</th>
-                <th class="py-3 px-5 w-44 hidden md:table-cell">Son İşlem Tarihi</th>
-                <th class="py-3 px-5 w-52 text-right">İşlemler</th>
+                <th class="py-3 px-5 w-52">Onam Durumu (Manuel Tıkla)</th>
+                <th class="py-3 px-5 w-44 hidden md:table-cell">Son Güncelleme</th>
+                <th class="py-3 px-5 w-60 text-right">Hızlı İşlemler</th>
               </tr>
             </thead>
             <tbody id="patientTableBody" class="divide-y divide-slate-100 font-medium">
               <tr>
-                <td colspan="5" class="py-16 text-center text-slate-400">
+                <td colspan="6" class="py-16 text-center text-slate-400">
                   <div class="inline-block animate-spin rounded-full h-6 w-6 border-2 border-vesta-700 border-t-transparent mb-2"></div>
-                  <p class="text-xs font-semibold">Veriler hazırlanıyor...</p>
+                  <p class="text-xs font-semibold">Veriler eşitleniyor...</p>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <!-- Daha Fazla Yükle (Pagination Butonu) -->
+        <!-- Daha Fazla Yükle / Pagination -->
         <div id="loadMoreContainer" class="hidden p-3.5 bg-slate-50 border-t border-slate-200 text-center">
           <button onclick="loadMoreRows()" class="h-8 px-4 text-xs font-bold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded-lg transition tabular shadow-2xs">
             Daha Fazla Göster (<span id="remainingCount">0</span> hasta kaldı)
@@ -315,18 +364,36 @@
     </main>
   </div>
 
-  <!-- ==================== MODAL 1: TABLET DİJİTAL İMZA & ONAM ==================== -->
-  <div id="signatureModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-3 sm:p-4 no-print">
-    <div class="bg-white rounded-2xl max-w-2xl w-full border border-slate-200 shadow-2xl flex flex-col max-h-[95vh] overflow-hidden">
+  <!-- ==================== MODAL 1: HASTA DÜZENLEME ==================== -->
+  <div id="editModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full border border-slate-200 shadow-xl p-6 space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 class="text-sm font-bold text-slate-900">Hasta Bilgisini Düzenle</h3>
+        <button onclick="closeModal('editModal')" class="text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Hasta Adı Soyadı</label>
+        <input id="editPatientNameInput" type="text" class="w-full h-10 px-3.5 border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:border-vesta-700" />
+      </div>
+      <div class="pt-2 flex justify-end gap-2">
+        <button onclick="closeModal('editModal')" class="h-8 px-3 text-xs font-semibold text-slate-600">İptal</button>
+        <button onclick="savePatientEdit()" class="h-8 px-4 text-xs font-bold text-white bg-vesta-800 hover:bg-vesta-900 rounded-lg">Güncelle</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 2: OPSİYONEL TABLET DİJİTAL İMZA ==================== -->
+  <div id="signatureModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-2xl max-w-xl w-full border border-slate-200 shadow-2xl flex flex-col max-h-[95vh] overflow-hidden">
       
       <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
         <div class="flex items-center gap-3">
           <div class="w-9 h-9 rounded-lg bg-vesta-100 text-vesta-900 flex items-center justify-center font-bold">
-            <i data-lucide="file-signature" class="w-5 h-5"></i>
+            <i data-lucide="pen-tool" class="w-5 h-5"></i>
           </div>
           <div>
             <h3 class="text-sm font-bold text-slate-900" id="signModalPatientName">Hasta Adı</h3>
-            <p class="text-[11px] text-slate-400">Aydınlatılmış Hasta Onamı ve KVKK Beyanı</p>
+            <p class="text-[11px] text-slate-400">Tablet / Dokunmatik İmza Alanı</p>
           </div>
         </div>
         <button onclick="closeModal('signatureModal')" class="text-slate-400 hover:text-slate-600 p-1">
@@ -334,24 +401,18 @@
         </button>
       </div>
 
-      <div class="p-5 overflow-y-auto space-y-3 text-xs text-slate-600 leading-relaxed border-b border-slate-100 max-h-44 bg-slate-50/40">
-        <p class="font-bold text-slate-800">Sayın Hastamız / Yasal Temsilcisi,</p>
-        <p>Vesta Ağız ve Diş Sağlığı Polikliniği hekimleri tarafından yapılacak dental tanı, teşhis, lokal anestezi, cerrahi çekim, kanal tedavisi ve protez uygulamaları hakkında tarafıma sözlü ve yazılı gerekli aydınlatma yapılmıştır.</p>
-        <p>6698 sayılı KVKK kapsamında sağlık geçmişi ve iletişim verilerimin klinikte arşivlenmesine, tedavi takibi ve mevzuat gereği Sağlık Bakanlığı sistemlerine bildirilmesine açık rızamla onay veriyorum.</p>
-      </div>
-
       <div class="p-6 space-y-2">
         <div class="flex items-center justify-between text-xs font-semibold text-slate-700">
-          <span class="flex items-center gap-1.5"><i data-lucide="pen-tool" class="w-3.5 h-3.5 text-vesta-700"></i> Dijital İmza Alanı</span>
+          <span>Hasta veya Vasinin İmzası</span>
           <button type="button" onclick="clearSignatureCanvas()" class="text-rose-600 hover:text-rose-700 flex items-center gap-1">
             <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Temizle
           </button>
         </div>
 
-        <div class="border-2 border-dashed border-slate-300 rounded-xl bg-slate-50/60 overflow-hidden relative h-40">
+        <div class="border-2 border-dashed border-slate-300 rounded-xl bg-slate-50/60 overflow-hidden relative h-48">
           <canvas id="signatureCanvas" class="signature-canvas w-full h-full"></canvas>
           <div id="signatureGuide" class="pointer-events-none absolute inset-0 flex items-center justify-center text-slate-400 text-xs font-medium">
-            Parmağınız veya dokunmatik kalemle buraya imzalayınız
+            Dokunarak veya kalemle buraya imzalayınız
           </div>
         </div>
       </div>
@@ -362,53 +423,15 @@
         </button>
         <button onclick="savePatientSignature()" class="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-sm flex items-center gap-1.5">
           <i data-lucide="check" class="w-4 h-4"></i>
-          Onayla ve Kaydet
+          İmzayı Kaydet
         </button>
       </div>
 
-    </div>
-  </div>
-
-  <!-- ==================== MODAL 2: ONAYLI BELGE GÖR & A4 YAZDIR ==================== -->
-  <div id="viewModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-3 sm:p-4 no-print">
-    <div class="bg-white rounded-2xl max-w-lg w-full border border-slate-200 shadow-2xl overflow-hidden flex flex-col">
-      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-        <div class="flex items-center gap-2">
-          <i data-lucide="file-check-2" class="w-5 h-5 text-emerald-600"></i>
-          <h3 class="text-sm font-bold text-slate-900" id="viewModalPatientName">Hasta Detayı</h3>
-        </div>
-        <button onclick="closeModal('viewModal')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
-      </div>
-
-      <div class="p-6 space-y-4">
-        <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-1">
-          <p><strong>Protokol Kayıt No:</strong> <span id="viewModalPatientId" class="font-mono text-slate-900"></span></p>
-          <p><strong>Onay Zamanı:</strong> <span id="viewModalPatientDate" class="text-slate-900"></span></p>
-          <p><strong>Kayıt Durumu:</strong> <span class="text-emerald-700 font-semibold">Resmi Onam Verildi</span></p>
-        </div>
-
-        <div>
-          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Arşivlenmiş İmza</label>
-          <div class="border rounded-xl p-3 bg-white flex items-center justify-center min-h-[120px]">
-            <img id="viewModalSignatureImg" src="" alt="İmza Görseli" class="max-h-24 object-contain" />
-          </div>
-        </div>
-      </div>
-
-      <div class="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-        <button onclick="printOfficialConsentForm()" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-vesta-800 hover:bg-vesta-900 text-white text-xs font-bold transition shadow-xs">
-          <i data-lucide="printer" class="w-4 h-4"></i>
-          Resmi Belgeyi Yazdır (A4 / PDF)
-        </button>
-        <button onclick="closeModal('viewModal')" class="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold bg-white">
-          Kapat
-        </button>
-      </div>
     </div>
   </div>
 
   <!-- ==================== MODAL 3: TEK HASTA EKLE ==================== -->
-  <div id="singleModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4 no-print">
+  <div id="singleModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-sm w-full border border-slate-200 shadow-xl p-6 space-y-4">
       <div class="flex items-center justify-between pb-3 border-b border-slate-100">
         <h3 class="text-sm font-bold text-slate-900">Yeni Hasta Ekle</h3>
@@ -432,13 +455,13 @@
     </div>
   </div>
 
-  <!-- ==================== MODAL 4: EXCEL (.XLSX / .XLS / .CSV) YÜKLEME ==================== -->
-  <div id="excelModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4 no-print">
+  <!-- ==================== MODAL 4: EXCEL TOPLU AKTARIM ==================== -->
+  <div id="excelModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-2xl w-full border border-slate-200 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
       <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
         <div>
           <h3 class="text-sm font-bold text-slate-900">Excel / CSV Toplu Hasta Aktarımı</h3>
-          <p class="text-xs text-slate-500 mt-0.5">Mevcut verileriniz silinmeden yeni hastalar portföye eklenir.</p>
+          <p class="text-xs text-slate-500 mt-0.5">Mevcut verileriniz silinmeden yeni hastalar eklenir.</p>
         </div>
         <button onclick="closeModal('excelModal')" class="text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
@@ -447,8 +470,8 @@
         <div id="dropZone" onclick="document.getElementById('excelFileInput').click()" class="border-2 border-dashed border-slate-300 hover:border-vesta-700 bg-slate-50/60 hover:bg-slate-50 rounded-xl p-6 text-center cursor-pointer transition">
           <input id="excelFileInput" type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleExcelFileSelect(event)" />
           <i data-lucide="upload-cloud" class="w-8 h-8 text-slate-400 mx-auto mb-2"></i>
-          <p id="selectedFileName" class="text-xs font-bold text-slate-800">Dosyayı buraya sürükleyin veya seçmek için tıklayın</p>
-          <p class="text-[11px] text-slate-400 mt-1">Desteklenen: .xlsx, .xls, .csv (6.000+ satır anında işlenir)</p>
+          <p id="selectedFileName" class="text-xs font-bold text-slate-800">Dosyayı buraya sürükleyin veya seçin</p>
+          <p class="text-[11px] text-slate-400 mt-1">.xlsx, .xls veya .csv (Binlerce satır desteklenir)</p>
         </div>
 
         <div id="excelConfigPanel" class="hidden space-y-4">
@@ -470,7 +493,7 @@
             </label>
             <label class="flex items-center gap-2 cursor-pointer font-medium">
               <input type="checkbox" id="skipDuplicatesCheck" checked onchange="rebuildExcelPreview()" class="rounded text-vesta-700" />
-              <span>Kayıtlı mükerrerleri atla</span>
+              <span>Mükerrerleri atla</span>
             </label>
             <select id="bulkDefaultStatus" class="h-8 px-2.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold">
               <option value="false">Varsayılan: İmzalamadı</option>
@@ -505,43 +528,7 @@
     </div>
   </div>
 
-  <!-- ==================== 5. RESMİ A4 YAZDIRMA ÇIKTI ŞABLONU ==================== -->
-  <div id="printContainer" class="hidden">
-    <div class="border-b-2 border-slate-900 pb-4 mb-6 flex items-center justify-between">
-      <div>
-        <h1 class="text-xl font-black text-slate-950 tracking-tight">VESTA AĞIZ VE DİŞ SAĞLIĞI POLİKLİNİĞİ</h1>
-        <p class="text-xs text-slate-600 mt-1">Hasta Bilgilendirilmiş Onam ve Kişisel Veri İşleme Onay Formu</p>
-      </div>
-      <img src="logo.png" alt="Vesta Klinik" class="h-16 w-auto object-contain" />
-    </div>
-
-    <div class="grid grid-cols-2 gap-4 text-xs mb-6 border border-slate-300 p-4 rounded-lg bg-slate-50/50">
-      <div><strong>Hasta Adı Soyadı:</strong> <span id="printPatientName" class="font-bold"></span></div>
-      <div><strong>Protokol Kayıt No:</strong> <span id="printPatientId" class="font-mono"></span></div>
-      <div><strong>Onay Tarihi:</strong> <span id="printPatientDate"></span></div>
-      <div><strong>Belge Niteliği:</strong> Elektronik / Islak İmzalı Asıl Suret</div>
-    </div>
-
-    <div class="text-xs text-slate-700 space-y-3 leading-relaxed text-justify mb-10">
-      <p>Poliklinik hekimlerince ağız ve diş muayenem gerçekleştirilmiş; uygulanması planlanan tedaviler, tedavi süreci, anestezi riskleri ve alternatif tedavi opsiyonları tarafıma açıkça anlatılmıştır.</p>
-      <p>Hekimimin önerdiği dental müdahaleleri kendi rızamla onayladığımı; 6698 sayılı KVKK kapsamında sağlık verilerimin poliklinik bilgi sisteminde arşivlenmesine muvafakat ettiğimi kabul ve beyan ederim.</p>
-    </div>
-
-    <div class="flex justify-between items-end mt-16 pt-6 border-t border-slate-300">
-      <div class="text-center text-xs">
-        <p class="font-bold text-slate-900">Tedaviyi Yürüten Hekim</p>
-        <p class="text-slate-400 mt-1">Kaşe / İmza</p>
-      </div>
-      <div class="text-center text-xs">
-        <p class="font-bold text-slate-900">Hasta / Yasal Vasi İmzası</p>
-        <div class="mt-2 h-24 flex items-center justify-center">
-          <img id="printSignatureImg" src="" alt="İmza" class="max-h-20 object-contain" />
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Bildirim Kutusu (Toast) -->
+  <!-- Bildirim Toast -->
   <div id="toast" class="fixed bottom-4 right-4 z-50 hidden bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-xl text-xs font-medium flex items-center gap-2 border border-slate-800">
     <span id="toastText">İşlem tamamlandı</span>
   </div>
@@ -569,7 +556,7 @@
       writeBatch
     } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-    // KENDİ VERİTABANI BAĞLANTINIZ (ASLA DEĞİŞTİRİLMEDİ)
+    // GERÇEK PROJE BAĞLANTINIZ
     const firebaseConfig = {
       apiKey: "AIzaSyDi_c1cBUB34AZLX3YAOsLNMH40T0cPYXU",
       authDomain: "vesta-klinik.firebaseapp.com",
@@ -587,6 +574,7 @@
 
     let allPatientsMap = new Map();
     let filteredPatients = [];
+    let selectedPatientIds = new Set();
     let currentFilter = "all";
     let displayLimit = 100;
     let deltaUnsubscribe = null;
@@ -594,7 +582,11 @@
     let rawExcelRows = [];
     let preparedImportNames = [];
     let activePatientForSign = null;
-    let activePatientForView = null;
+    let activePatientForEdit = null;
+
+    // Chart.js Referansları
+    let statusChartInstance = null;
+    let trendChartInstance = null;
 
     // Klavye Kısayolu: Cmd+K / Ctrl+K
     window.addEventListener("keydown", (e) => {
@@ -617,10 +609,12 @@
         appView.classList.add("flex");
         document.getElementById("userEmailBadge").textContent = user.email;
         lucide.createIcons();
+        initCharts();
         await initSync();
       } else {
         if (deltaUnsubscribe) deltaUnsubscribe();
         allPatientsMap.clear();
+        selectedPatientIds.clear();
         appView.classList.add("hidden");
         appView.classList.remove("flex");
         loginView.classList.remove("hidden");
@@ -656,7 +650,6 @@
       }
     };
 
-    // Türkçe Arama Normalizasyonu
     function normalizeTurkish(str) {
       if (!str) return "";
       return String(str)
@@ -823,7 +816,318 @@
     };
 
     // ============================================================================
-    // DİJİTAL İMZA MOTORU (TABLET / iPAD UYUMLU)
+    // GRAFİK MOTORU (CHART.JS)
+    // ============================================================================
+    function initCharts() {
+      // 1. Donut Dağılım Grafiği
+      const ctx1 = document.getElementById("statusChart");
+      if (ctx1) {
+        statusChartInstance = new Chart(ctx1, {
+          type: "doughnut",
+          data: {
+            labels: ["İmzalandı", "Bekliyor"],
+            datasets: [{
+              data: [0, 0],
+              backgroundColor: ["#059669", "#e11d48"],
+              borderWidth: 0,
+              hoverOffset: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: "bottom", labels: { boxWidth: 12, font: { size: 11, family: "Inter" } } }
+            },
+            cutout: "70%"
+          }
+        });
+      }
+
+      // 2. Trend Bar Grafiği (Son 7 Gün)
+      const ctx2 = document.getElementById("trendChart");
+      if (ctx2) {
+        trendChartInstance = new Chart(ctx2, {
+          type: "bar",
+          data: {
+            labels: [],
+            datasets: [{
+              label: "İşlem Gören Hasta Sayısı",
+              data: [],
+              backgroundColor: "#0c525b",
+              borderRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false }
+            },
+            scales: {
+              x: { grid: { display: false }, ticks: { font: { size: 10, family: "Inter" } } },
+              y: { beginAtZero: true, ticks: { precision: 0, font: { size: 10, family: "Inter" } } }
+            }
+          }
+        });
+      }
+    }
+
+    function updateCharts(signed, unsigned) {
+      if (statusChartInstance) {
+        statusChartInstance.data.datasets[0].data = [signed, unsigned];
+        statusChartInstance.update();
+      }
+
+      if (trendChartInstance) {
+        // Son 7 günün tarihlerini hesapla
+        const days = [];
+        const counts = [];
+        const now = new Date();
+
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(now);
+          d.setDate(d.getDate() - i);
+          const dayStr = d.toLocaleDateString("tr-TR", { weekday: "short", day: "numeric" });
+          days.push(dayStr);
+
+          // O güne denk gelen işlem sayısını say
+          const startOfDay = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+          const endOfDay = startOfDay + 86400000;
+
+          let count = 0;
+          allPatientsMap.forEach(p => {
+            if (p.updatedAt >= startOfDay && p.updatedAt < endOfDay) count++;
+          });
+          counts.push(count);
+        }
+
+        trendChartInstance.data.labels = days;
+        trendChartInstance.data.datasets[0].data = counts;
+        trendChartInstance.update();
+      }
+    }
+
+    window.toggleAnalyticsView = function () {
+      const sec = document.getElementById("analyticsSection");
+      sec.classList.toggle("hidden");
+    };
+
+    // ============================================================================
+    // DOĞRUDAN MANUEL DURUM DEĞİŞTİRME & HASTA İŞLEMLERİ
+    // ============================================================================
+    window.toggleConsentStatus = async function (patientId) {
+      const existing = allPatientsMap.get(patientId);
+      if (!existing) return;
+
+      const newSigned = !existing.signed;
+      const now = Date.now();
+
+      // UI'da salisede güncelle
+      existing.signed = newSigned;
+      existing.updatedAt = now;
+      allPatientsMap.set(patientId, existing);
+      updateStatsAndRender(false);
+
+      try {
+        await updateDoc(doc(db, "patients", patientId), {
+          signed: newSigned,
+          updatedAt: now
+        });
+        await saveManyToLocalDB([existing]);
+        showToast(`${existing.fullName} → ${newSigned ? "Onam İmzaladı" : "İmzalamadı"}`);
+      } catch (err) {
+        existing.signed = !newSigned;
+        allPatientsMap.set(patientId, existing);
+        updateStatsAndRender(false);
+        showToast("Hata: Güncelleme kaydedilemedi");
+      }
+    };
+
+    // ============================================================================
+    // TOPLU İŞLEMLER (MULTI-SELECT BATCH)
+    // ============================================================================
+    window.toggleSelectPatient = function (id) {
+      if (selectedPatientIds.has(id)) {
+        selectedPatientIds.delete(id);
+      } else {
+        selectedPatientIds.add(id);
+      }
+      updateBulkUI();
+    };
+
+    window.toggleSelectAll = function (e) {
+      const checked = e.target.checked;
+      if (checked) {
+        filteredPatients.forEach(p => selectedPatientIds.add(p.id));
+      } else {
+        selectedPatientIds.clear();
+      }
+      updateBulkUI();
+      renderTableRows();
+    };
+
+    window.clearSelection = function () {
+      selectedPatientIds.clear();
+      document.getElementById("selectAllCheckbox").checked = false;
+      updateBulkUI();
+      renderTableRows();
+    };
+
+    function updateBulkUI() {
+      const bar = document.getElementById("bulkActionBar");
+      const countText = document.getElementById("selectedCountText");
+      if (selectedPatientIds.size > 0) {
+        bar.classList.remove("hidden");
+        countText.textContent = selectedPatientIds.size.toLocaleString("tr-TR");
+      } else {
+        bar.classList.add("hidden");
+      }
+    }
+
+    window.bulkSetStatus = async function (targetStatus) {
+      if (selectedPatientIds.size === 0) return;
+      const count = selectedPatientIds.size;
+      const batch = writeBatch(db);
+      const now = Date.now();
+      const updatedList = [];
+
+      selectedPatientIds.forEach(id => {
+        const p = allPatientsMap.get(id);
+        if (p) {
+          p.signed = targetStatus;
+          p.updatedAt = now;
+          allPatientsMap.set(id, p);
+          updatedList.push(p);
+          batch.update(doc(db, "patients", id), { signed: targetStatus, updatedAt: now });
+        }
+      });
+
+      updateStatsAndRender(false);
+      clearSelection();
+
+      try {
+        await batch.commit();
+        await saveManyToLocalDB(updatedList);
+        showToast(`${count} hasta ${targetStatus ? "İmzalandı" : "İmzalamadı"} yapıldı`);
+      } catch (err) {
+        showToast("Toplu işlem sırasında hata oluştu");
+      }
+    };
+
+    window.bulkDelete = async function () {
+      if (selectedPatientIds.size === 0) return;
+      const count = selectedPatientIds.size;
+      if (!confirm(`Seçilen ${count} hastayı kalıcı olarak silmek istediğinize emin misiniz?`)) return;
+
+      const batch = writeBatch(db);
+      selectedPatientIds.forEach(id => {
+        batch.delete(doc(db, "patients", id));
+        allPatientsMap.delete(id);
+        removeFromLocalDB(id);
+      });
+
+      updateStatsAndRender(false);
+      clearSelection();
+
+      try {
+        await batch.commit();
+        showToast(`${count} hasta silindi`);
+      } catch (err) {
+        showToast("Toplu silme başarısız");
+      }
+    };
+
+    // ============================================================================
+    // HASTA DÜZENLEME & SİLME
+    // ============================================================================
+    window.openEditModal = function (id) {
+      activePatientForEdit = allPatientsMap.get(id);
+      if (!activePatientForEdit) return;
+      document.getElementById("editPatientNameInput").value = activePatientForEdit.fullName;
+      openModal("editModal");
+    };
+
+    window.savePatientEdit = async function () {
+      if (!activePatientForEdit) return;
+      const newName = document.getElementById("editPatientNameInput").value.trim().replace(/\s+/g, " ");
+      if (newName.length < 2) return alert("Geçerli bir ad soyad girin.");
+
+      const now = Date.now();
+      activePatientForEdit.fullName = newName;
+      activePatientForEdit.searchKey = normalizeTurkish(newName);
+      activePatientForEdit.updatedAt = now;
+
+      allPatientsMap.set(activePatientForEdit.id, activePatientForEdit);
+      updateStatsAndRender(false);
+      closeModal("editModal");
+
+      try {
+        await updateDoc(doc(db, "patients", activePatientForEdit.id), {
+          fullName: newName,
+          updatedAt: now
+        });
+        await saveManyToLocalDB([activePatientForEdit]);
+        showToast("Hasta adı güncellendi");
+      } catch {
+        showToast("Güncelleme kaydedilemedi");
+      }
+    };
+
+    window.deletePatient = async function (patientId) {
+      const existing = allPatientsMap.get(patientId);
+      if (!existing) return;
+      if (!confirm(`"${existing.fullName}" kaydını silmek istediğinize emin misiniz?`)) return;
+
+      try {
+        await deleteDoc(doc(db, "patients", patientId));
+        allPatientsMap.delete(patientId);
+        selectedPatientIds.delete(patientId);
+        await removeFromLocalDB(patientId);
+        updateStatsAndRender(false);
+        showToast("Kayıt silindi");
+      } catch {
+        showToast("Silme işlemi başarısız");
+      }
+    };
+
+    window.addSinglePatient = async function () {
+      const nameInput = document.getElementById("singleNameInput");
+      const statusInput = document.getElementById("singleStatusInput");
+      const fullName = nameInput.value.trim().replace(/\s+/g, " ");
+      if (fullName.length < 2) return alert("Geçerli bir ad soyad girin.");
+
+      const btn = document.getElementById("singleSubmitBtn");
+      btn.disabled = true;
+
+      try {
+        const newRef = doc(patientsCol);
+        const now = Date.now();
+        const signed = statusInput.value === "true";
+        const newPatient = {
+          id: newRef.id,
+          fullName,
+          searchKey: normalizeTurkish(fullName),
+          signed,
+          updatedAt: now
+        };
+
+        await setDoc(newRef, { fullName, signed, updatedAt: now });
+        allPatientsMap.set(newPatient.id, newPatient);
+        await saveManyToLocalDB([newPatient]);
+        nameInput.value = "";
+        closeModal("singleModal");
+        updateStatsAndRender(true);
+        showToast("Hasta eklendi");
+      } catch (err) {
+        alert("Kayıt hatası: " + err.message);
+      } finally {
+        btn.disabled = false;
+      }
+    };
+
+    // ============================================================================
+    // OPSİYONEL DİJİTAL İMZA MOTORU
     // ============================================================================
     const canvas = document.getElementById("signatureCanvas");
     const ctx = canvas.getContext("2d");
@@ -914,111 +1218,6 @@
       }
     };
 
-    // Belge Görme & Yazdırma
-    window.openViewModal = function (patientId) {
-      activePatientForView = allPatientsMap.get(patientId);
-      if (!activePatientForView) return;
-
-      document.getElementById("viewModalPatientName").textContent = activePatientForView.fullName;
-      document.getElementById("viewModalPatientId").textContent = activePatientForView.id;
-      document.getElementById("viewModalPatientDate").textContent = activePatientForView.updatedAt
-        ? new Date(activePatientForView.updatedAt).toLocaleString("tr-TR")
-        : "-";
-      document.getElementById("viewModalSignatureImg").src = activePatientForView.signatureImage || "";
-
-      openModal("viewModal");
-    };
-
-    window.printOfficialConsentForm = function () {
-      if (!activePatientForView) return;
-      document.getElementById("printPatientName").textContent = activePatientForView.fullName;
-      document.getElementById("printPatientId").textContent = activePatientForView.id;
-      document.getElementById("printPatientDate").textContent = activePatientForView.updatedAt
-        ? new Date(activePatientForView.updatedAt).toLocaleString("tr-TR")
-        : "-";
-      document.getElementById("printSignatureImg").src = activePatientForView.signatureImage || "";
-      window.print();
-    };
-
-    // Hızlı Durum Değiştirme
-    window.toggleConsentStatus = async function (patientId) {
-      const existing = allPatientsMap.get(patientId);
-      if (!existing) return;
-
-      const newSigned = !existing.signed;
-      const now = Date.now();
-
-      existing.signed = newSigned;
-      existing.updatedAt = now;
-      allPatientsMap.set(patientId, existing);
-      updateStatsAndRender(false);
-
-      try {
-        await updateDoc(doc(db, "patients", patientId), {
-          signed: newSigned,
-          updatedAt: now
-        });
-        await saveManyToLocalDB([existing]);
-        showToast(`${existing.fullName} → ${newSigned ? "Onam İmzaladı" : "İmzalamadı"}`);
-      } catch {
-        existing.signed = !newSigned;
-        allPatientsMap.set(patientId, existing);
-        updateStatsAndRender(false);
-        showToast("Güncelleme kaydedilemedi");
-      }
-    };
-
-    window.deletePatient = async function (patientId) {
-      const existing = allPatientsMap.get(patientId);
-      if (!existing) return;
-      if (!confirm(`"${existing.fullName}" kaydını silmek istediğinize emin misiniz?`)) return;
-
-      try {
-        await deleteDoc(doc(db, "patients", patientId));
-        allPatientsMap.delete(patientId);
-        await removeFromLocalDB(patientId);
-        updateStatsAndRender(false);
-        showToast("Kayıt silindi");
-      } catch {
-        showToast("Silme işlemi başarısız");
-      }
-    };
-
-    window.addSinglePatient = async function () {
-      const nameInput = document.getElementById("singleNameInput");
-      const statusInput = document.getElementById("singleStatusInput");
-      const fullName = nameInput.value.trim().replace(/\s+/g, " ");
-      if (fullName.length < 2) return alert("Geçerli bir ad soyad girin.");
-
-      const btn = document.getElementById("singleSubmitBtn");
-      btn.disabled = true;
-
-      try {
-        const newRef = doc(patientsCol);
-        const now = Date.now();
-        const signed = statusInput.value === "true";
-        const newPatient = {
-          id: newRef.id,
-          fullName,
-          searchKey: normalizeTurkish(fullName),
-          signed,
-          updatedAt: now
-        };
-
-        await setDoc(newRef, { fullName, signed, updatedAt: now });
-        allPatientsMap.set(newPatient.id, newPatient);
-        await saveManyToLocalDB([newPatient]);
-        nameInput.value = "";
-        closeModal("singleModal");
-        updateStatsAndRender(true);
-        showToast("Hasta eklendi");
-      } catch (err) {
-        alert("Kayıt hatası: " + err.message);
-      } finally {
-        btn.disabled = false;
-      }
-    };
-
     // ============================================================================
     // EXCEL İÇE VE DIŞA AKTARIM
     // ============================================================================
@@ -1026,7 +1225,7 @@
       rawExcelRows = [];
       preparedImportNames = [];
       document.getElementById("excelFileInput").value = "";
-      document.getElementById("selectedFileName").textContent = "Excel dosyasını buraya bırakın veya seçmek için tıklayın";
+      document.getElementById("selectedFileName").textContent = "Dosyayı buraya sürükleyin veya seçin";
       document.getElementById("excelConfigPanel").classList.add("hidden");
       document.getElementById("bulkProgressBox").classList.add("hidden");
       document.getElementById("bulkSubmitBtn").disabled = true;
@@ -1272,6 +1471,7 @@
       document.getElementById("progressBarLabel").textContent = `${signedCount.toLocaleString("tr-TR")} / ${total.toLocaleString("tr-TR")}`;
       document.getElementById("progressBarFill").style.width = `${signedPct}%`;
 
+      updateCharts(signedCount, unsignedCount);
       renderList(resetLimit);
     }
 
@@ -1305,7 +1505,7 @@
       const loadMoreContainer = document.getElementById("loadMoreContainer");
 
       if (filteredPatients.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="py-14 text-center text-slate-400 font-semibold text-xs">Arama kriterlerine uygun kayıt bulunamadı.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="py-14 text-center text-slate-400 font-semibold text-xs">Arama kriterlerine uygun kayıt bulunamadı.</td></tr>`;
         loadMoreContainer.classList.add("hidden");
         return;
       }
@@ -1313,6 +1513,7 @@
       const slice = filteredPatients.slice(0, displayLimit);
       tbody.innerHTML = slice
         .map((p, idx) => {
+          const isSelected = selectedPatientIds.has(p.id);
           const dateStr = p.updatedAt
             ? new Date(p.updatedAt).toLocaleString("tr-TR", {
                 day: "2-digit",
@@ -1323,39 +1524,49 @@
               })
             : "—";
 
+          // Doğrudan tıklanabilir durum rozeti
           const statusBadge = p.signed
-            ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            ? `<button onclick="toggleConsentStatus('${p.id}')" title="İmzalamadı olarak değiştirmek için tıkla" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition active:scale-95 cursor-pointer">
                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                 Onam Formu İmzaladı
-               </span>`
-            : `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                 İmzaladı ✓
+               </button>`
+            : `<button onclick="toggleConsentStatus('${p.id}')" title="İmzaladı olarak değiştirmek için tıkla" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition active:scale-95 cursor-pointer">
                  <span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span>
-                 Onam Formu İmzalamadı
-               </span>`;
+                 İmzalamadı ✕
+               </button>`;
 
-          const actionBtn = p.signed
-            ? `<div class="inline-flex items-center gap-1">
-                 <button onclick="openViewModal('${p.id}')" class="h-7 px-2.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg transition inline-flex items-center gap-1">
-                   <i data-lucide="eye" class="w-3 h-3 text-slate-500"></i> Gör
-                 </button>
-                 <button onclick="toggleConsentStatus('${p.id}')" title="İmzasız Durumuna Al" class="h-7 px-2 text-xs font-semibold text-slate-400 hover:text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50 transition">
-                   Geri Al
-                 </button>
-               </div>`
-            : `<button onclick="openSignModal('${p.id}')" class="h-7 px-3 text-xs font-bold text-white bg-vesta-800 hover:bg-vesta-900 active:scale-95 rounded-lg transition shadow-2xs inline-flex items-center gap-1.5">
-                 <i data-lucide="pen-tool" class="w-3 h-3"></i> Onam İmzalat
+          // Doğrudan manuel eylem butonu
+          const quickActionButton = p.signed
+            ? `<button onclick="toggleConsentStatus('${p.id}')" class="h-8 px-2.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg transition inline-flex items-center gap-1">
+                 İptal Et
+               </button>`
+            : `<button onclick="toggleConsentStatus('${p.id}')" class="h-8 px-3 text-xs font-bold text-white bg-vesta-800 hover:bg-vesta-900 active:scale-95 rounded-lg transition shadow-2xs inline-flex items-center gap-1">
+                 <i data-lucide="check" class="w-3.5 h-3.5"></i> İmzalandı Yap
                </button>`;
 
           return `
-            <tr class="hover:bg-slate-50/80 transition group">
-              <td class="py-3 px-5 font-mono text-slate-400 tabular">${idx + 1}</td>
-              <td class="py-3 px-5 font-bold text-slate-900">${p.fullName}</td>
+            <tr class="hover:bg-slate-50/80 transition group ${isSelected ? 'bg-vesta-50/40' : ''}">
+              <td class="py-3 px-4 text-center">
+                <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleSelectPatient('${p.id}')" class="rounded border-slate-300 text-vesta-800 focus:ring-vesta-700 cursor-pointer" />
+              </td>
+              <td class="py-3 px-4 font-mono text-slate-400 tabular text-center">${idx + 1}</td>
+              <td class="py-3 px-5">
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-slate-900 text-xs">${p.fullName}</span>
+                  <button onclick="openEditModal('${p.id}')" title="İsmi Düzenle" class="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-slate-700 transition">
+                    <i data-lucide="edit-3" class="w-3 h-3"></i>
+                  </button>
+                </div>
+              </td>
               <td class="py-3 px-5">${statusBadge}</td>
               <td class="py-3 px-5 font-mono text-slate-500 hidden md:table-cell tabular">${dateStr}</td>
               <td class="py-3 px-5 text-right">
                 <div class="inline-flex items-center gap-1.5">
-                  ${actionBtn}
-                  <button onclick="deletePatient('${p.id}')" title="Sil" class="h-7 w-7 inline-flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition">
+                  ${quickActionButton}
+                  <button onclick="openSignModal('${p.id}')" title="Tabletten İmza Çiz" class="h-8 px-2 text-xs font-semibold text-slate-600 hover:text-vesta-800 border border-slate-200 bg-white hover:bg-slate-50 rounded-lg transition inline-flex items-center gap-1">
+                    <i data-lucide="pen-tool" class="w-3 h-3 text-slate-400"></i> Tablet
+                  </button>
+                  <button onclick="deletePatient('${p.id}')" title="Sil" class="h-8 w-8 inline-flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition">
                     <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                   </button>
                 </div>
