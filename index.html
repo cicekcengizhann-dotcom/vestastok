@@ -1,1167 +1,839 @@
 <!DOCTYPE html>
-<html lang="tr" class="h-full bg-zinc-50">
+<html lang="tr" class="h-full bg-slate-50">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vesta Klinik — Onam Kayıt Sistemi</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- SheetJS: Doğrudan .xlsx ve .xls Excel okuma/yazma kütüphanesi -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Vesta Klinik | Hasta Onam & Takip Portalı</title>
+  
+  <!-- Font: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <style>
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-      -webkit-font-smoothing: antialiased;
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+          colors: {
+            vesta: {
+              50: '#f0f9fa',
+              100: '#d9f1f3',
+              200: '#b4e4e9',
+              500: '#00a8b5',
+              600: '#008b98',
+              700: '#0a646f',
+              800: '#0c525b',
+              900: '#073c43',
+            }
+          }
+        }
+      }
     }
-    .mono { font-family: 'JetBrains Mono', monospace; }
-    .tabular { font-variant-numeric: tabular-nums; }
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
+  </script>
+
+  <!-- Lucide Icons & SheetJS -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- Firebase v9 Compat SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    /* Özel Kaydırma Çubuğu */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    
+    .signature-canvas {
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    /* Yazdırma (A4 Resmi Onam Belgesi) Kuralları */
+    @media print {
+      body * { visibility: hidden; }
+      #printContainer, #printContainer * { visibility: visible; }
+      #printContainer {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: white !important;
+        padding: 20mm;
+      }
+      .no-print { display: none !important; }
+    }
   </style>
 </head>
-<body class="h-full text-zinc-900 flex flex-col selection:bg-zinc-900 selection:text-white">
 
-  <!-- 1. OTURUM KONTROL EKRANI -->
-  <div id="authLoadingScreen" class="fixed inset-0 bg-zinc-50 z-50 flex items-center justify-center">
-    <div class="flex items-center gap-3 text-xs font-medium text-zinc-500 uppercase tracking-widest">
-      <span class="w-2 h-2 rounded-full bg-zinc-900 animate-ping"></span>
-      Oturum Doğrulanıyor
-    </div>
-  </div>
+<body class="h-full flex flex-col text-slate-800 antialiased selection:bg-vesta-500 selection:text-white">
 
-  <!-- 2. GİRİŞ EKRANI -->
-  <div id="loginView" class="hidden min-h-screen flex flex-col justify-center items-center px-4 bg-zinc-50">
-    <div class="w-full max-w-sm bg-white border border-zinc-200 rounded-lg p-7 shadow-2xs">
-      <div class="flex items-center justify-between border-b border-zinc-100 pb-4 mb-6">
-        <div>
-          <h1 class="text-sm font-semibold text-zinc-900 tracking-tight">VESTA KLİNİK</h1>
-          <p class="text-xs text-zinc-500 mt-0.5">Hasta Onam Kayıt Sistemi</p>
+  <!-- ==================== ÜST PANEL (HEADER) ==================== -->
+  <header class="bg-white border-b border-slate-200/80 sticky top-0 z-30 shadow-[0_1px_3px_rgba(0,0,0,0.03)] no-print">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-20">
+        
+        <!-- Logo & Başlık -->
+        <div class="flex items-center gap-3.5">
+          <img src="logo.png" alt="Vesta Klinik" class="h-14 w-auto object-contain" onerror="this.src='https://dummyimage.com/180x60/0a646f/ffffff&text=VESTA+KLINIK'" />
+          <div class="hidden sm:block border-l border-slate-200 pl-3.5">
+            <h1 class="text-base font-extrabold text-vesta-900 tracking-tight leading-none">VESTA KLİNİK</h1>
+            <p class="text-[11px] font-semibold text-slate-400 tracking-wider uppercase mt-1">Ağız ve Diş Sağlığı Polikliniği</p>
+          </div>
         </div>
-        <span class="mono text-[11px] font-medium px-2 py-0.5 bg-zinc-100 text-zinc-600 rounded">v2.4</span>
+
+        <!-- Canlı Durum ve Aksiyonlar -->
+        <div class="flex items-center gap-2 sm:gap-3">
+          <div class="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-xs font-semibold">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            Canlı Bulut Senkronizasyonu
+          </div>
+
+          <button onclick="openModal('addPatientModal')" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-vesta-800 hover:bg-vesta-900 text-white text-xs sm:text-sm font-semibold transition-all shadow-sm active:scale-95">
+            <i data-lucide="user-plus" class="w-4 h-4"></i>
+            <span>Yeni Hasta</span>
+          </button>
+
+          <button onclick="openModal('importModal')" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs sm:text-sm font-semibold transition-all" title="Excel veya CSV yükle">
+            <i data-lucide="file-up" class="w-4 h-4 text-slate-500"></i>
+            <span class="hidden md:inline">Excel İçe Aktar</span>
+          </button>
+
+          <button onclick="exportToExcel()" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs sm:text-sm font-semibold transition-all" title="Listeyi Excel olarak indir">
+            <i data-lucide="download" class="w-4 h-4 text-slate-500"></i>
+            <span class="hidden md:inline">Dışa Aktar</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== ANA ÇALIŞMA ALANI ==================== -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 no-print">
+
+    <!-- KPI / Analiz & Raporlama Bölümü -->
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+      <!-- Toplam Hasta -->
+      <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200/80 shadow-xs">
+        <div class="flex items-center justify-between text-slate-500">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Kayıtlı Portföy</span>
+          <div class="p-2 rounded-lg bg-slate-50 text-slate-600"><i data-lucide="users" class="w-4 h-4"></i></div>
+        </div>
+        <div class="mt-2.5 flex items-baseline gap-1.5">
+          <span id="statTotal" class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">0</span>
+          <span class="text-xs font-semibold text-slate-400">hasta</span>
+        </div>
       </div>
 
-      <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
-        <div>
-          <label class="block text-xs font-medium text-zinc-700 mb-1.5">Kurumsal E-Posta</label>
-          <input
-            id="loginEmail"
-            type="email"
-            required
-            autocomplete="email"
-            placeholder="isim@vestaklinik.com"
-            class="w-full h-9 px-3 bg-white border border-zinc-300 rounded-md text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 transition"
-          />
+      <!-- Onam Verenler -->
+      <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200/80 shadow-xs">
+        <div class="flex items-center justify-between text-emerald-600">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Onaylananlar</span>
+          <div class="p-2 rounded-lg bg-emerald-50 text-emerald-600"><i data-lucide="badge-check" class="w-4 h-4"></i></div>
         </div>
-
-        <div>
-          <label class="block text-xs font-medium text-zinc-700 mb-1.5">Parola</label>
-          <input
-            id="loginPassword"
-            type="password"
-            required
-            autocomplete="current-password"
-            placeholder="••••••••"
-            class="w-full h-9 px-3 bg-white border border-zinc-300 rounded-md text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 transition"
-          />
+        <div class="mt-2.5 flex items-baseline gap-1.5">
+          <span id="statSigned" class="text-2xl sm:text-3xl font-extrabold text-emerald-600 tracking-tight">0</span>
+          <span class="text-xs font-semibold text-emerald-700/60">onamlı</span>
         </div>
+      </div>
 
-        <div id="loginErrorMsg" class="hidden p-2.5 rounded-md bg-red-50 border border-red-200 text-xs text-red-700 font-medium"></div>
+      <!-- İmza Bekleyenler -->
+      <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200/80 shadow-xs">
+        <div class="flex items-center justify-between text-amber-600">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">İmza Bekleyen</span>
+          <div class="p-2 rounded-lg bg-amber-50 text-amber-600"><i data-lucide="clock-3" class="w-4 h-4"></i></div>
+        </div>
+        <div class="mt-2.5 flex items-baseline gap-1.5">
+          <span id="statPending" class="text-2xl sm:text-3xl font-extrabold text-amber-600 tracking-tight">0</span>
+          <span class="text-xs font-semibold text-amber-700/60">bekliyor</span>
+        </div>
+      </div>
 
-        <button
-          type="submit"
-          id="loginSubmitBtn"
-          class="w-full h-9 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-medium rounded-md transition flex items-center justify-center gap-2"
-        >
-          <span>Oturum Aç</span>
+      <!-- Tamamlanma & KVKK Uyum Oranı -->
+      <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
+        <div class="flex items-center justify-between text-vesta-700">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Uyum Yüzdesi</span>
+          <div class="p-2 rounded-lg bg-vesta-50 text-vesta-700"><i data-lucide="shield-check" class="w-4 h-4"></i></div>
+        </div>
+        <div class="mt-2.5">
+          <div class="flex items-baseline justify-between mb-1.5">
+            <span id="statRate" class="text-2xl sm:text-3xl font-extrabold text-vesta-900 tracking-tight">%0</span>
+            <span class="text-[11px] text-slate-500 font-medium">KVKK Tamamlanma</span>
+          </div>
+          <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+            <div id="statProgressBar" class="bg-vesta-600 h-1.5 rounded-full transition-all duration-700" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Kontrol Çubuğu (Arama, Filtreleme ve Sıralama) -->
+    <section class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
+      <!-- Arama Input -->
+      <div class="relative w-full md:w-96">
+        <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <input 
+          type="text" 
+          id="searchInput" 
+          oninput="handleSearch()" 
+          placeholder="Hasta adı veya kimlik ile filtrele..." 
+          class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-vesta-600/20 focus:border-vesta-600 transition-all"
+        />
+      </div>
+
+      <!-- Filtre Butonları -->
+      <div class="flex items-center w-full md:w-auto gap-2">
+        <div class="inline-flex p-1 bg-slate-100 rounded-lg text-xs font-semibold text-slate-600 w-full sm:w-auto justify-between">
+          <button onclick="setFilter('all')" id="btnFilterAll" class="px-3.5 py-1.5 rounded-md bg-white text-slate-900 shadow-xs transition-all">Tümü</button>
+          <button onclick="setFilter('pending')" id="btnFilterPending" class="px-3.5 py-1.5 rounded-md hover:text-slate-900 transition-all">Bekleyenler</button>
+          <button onclick="setFilter('signed')" id="btnFilterSigned" class="px-3.5 py-1.5 rounded-md hover:text-slate-900 transition-all">İmzalananlar</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Hasta Veri Tablosu -->
+    <section class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden flex flex-col">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-slate-50/75 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+            <tr>
+              <th scope="col" class="py-3.5 px-4 sm:px-6">Hasta Kimliği</th>
+              <th scope="col" class="py-3.5 px-4 sm:px-6">Onam Durumu</th>
+              <th scope="col" class="py-3.5 px-4 sm:px-6 hidden md:table-cell">Son Değişiklik Tarihi</th>
+              <th scope="col" class="py-3.5 px-4 sm:px-6 text-right">İşlemler</th>
+            </tr>
+          </thead>
+          <tbody id="patientTableBody" class="divide-y divide-slate-100 font-medium">
+            <!-- Dinamik doldurulacak -->
+            <tr>
+              <td colspan="4" class="py-16 text-center text-slate-400">
+                <div class="inline-block animate-spin rounded-full h-6 w-6 border-2 border-vesta-800 border-t-transparent mb-2"></div>
+                <p class="text-xs font-semibold">Veriler eşitleniyor...</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Alt Sayfalama (Pagination) Kontrolü -->
+      <div class="px-4 sm:px-6 py-3.5 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 font-medium">
+        <div id="pageInfo">0 kayıttan 0-0 arası gösteriliyor</div>
+        <div class="flex items-center gap-1.5">
+          <button onclick="prevPage()" id="btnPrevPage" class="p-1.5 rounded border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed">
+            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+          </button>
+          <span id="currentPageBadge" class="px-2.5 py-1 rounded bg-slate-100 font-bold text-slate-700 text-xs">1</span>
+          <button onclick="nextPage()" id="btnNextPage" class="p-1.5 rounded border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed">
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== MODAL: DİJİTAL İMZA & ONAM FORMU ==================== -->
+  <div id="consentModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 no-print">
+    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[94vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      
+      <!-- Başlık -->
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-vesta-100 text-vesta-800 flex items-center justify-center font-bold">
+            <i data-lucide="file-signature" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900" id="consentModalPatientName">Hasta Adı</h3>
+            <p class="text-xs text-slate-500">Aydınlatılmış Tedavi & KVKK Onam Beyanı</p>
+          </div>
+        </div>
+        <button onclick="closeModal('consentModal')" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
         </button>
-      </form>
-    </div>
-    <p class="mt-4 text-[11px] text-zinc-400">Yetkisiz erişim girişimleri kayıt altına alınmaktadır.</p>
-  </div>
+      </div>
 
-  <!-- 3. ANA UYGULAMA -->
-  <div id="appView" class="hidden flex-col min-h-screen">
+      <!-- Hukuki ve Tıbbi Metin -->
+      <div class="px-6 py-4 overflow-y-auto space-y-3 text-xs text-slate-600 leading-relaxed border-b border-slate-100 max-h-48 bg-slate-50/30">
+        <p class="font-bold text-slate-800">Sayın Hastamız / Yasal Temsilcisi,</p>
+        <p>Vesta Ağız ve Diş Sağlığı Polikliniği bünyesinde yapılacak klinik, radyolojik ve laboratuvar muayeneleri doğrultusunda uygulanması planlanan dental tedaviler (dolgu, kanal tedavisi, cerrahi çekim, protez, periodontal ve implant uygulamaları vb.), tedavi riskleri, alternatif seçenekler ve olası komplikasyonlar tarafıma anlaşılır şekilde aktarılmıştır.</p>
+        <p>6698 sayılı KVKK kapsamında şahsıma ait sağlık, iletişim ve kimlik bilgilerimin poliklinik bilgi sisteminde arşivlenmesini, faturalama ve Sağlık Bakanlığı sistemlerine bildirim amacıyla işlenmesini açık rızamla kabul ediyorum.</p>
+      </div>
 
-    <!-- ÜST KOMUT ÇUBUĞU -->
-    <header class="bg-white border-b border-zinc-200 sticky top-0 z-30">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
-        <div class="flex items-center gap-4">
-          <div class="flex items-center gap-2.5">
-            <div class="w-2.5 h-2.5 rounded-xs bg-zinc-900"></div>
-            <span class="text-sm font-semibold tracking-tight text-zinc-900">VESTA KLİNİK</span>
-            <span class="text-zinc-300">/</span>
-            <span class="text-xs font-medium text-zinc-500">Onam Yönetimi</span>
-          </div>
-
-          <div class="hidden md:flex items-center gap-1.5 pl-3 border-l border-zinc-200">
-            <span id="syncIndicator" class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-            <span id="syncStatusText" class="text-[11px] font-medium text-zinc-500 tabular">Bağlanıyor...</span>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <button onclick="exportExcel()" class="h-8 px-3 text-xs font-medium text-zinc-700 bg-white border border-zinc-300 rounded-md hover:bg-zinc-50 transition inline-flex items-center gap-1.5">
-            <svg class="w-3.5 h-3.5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-            </svg>
-            <span class="hidden sm:inline">Excel İndir (.xlsx)</span>
-          </button>
-
-          <button onclick="openModal('singleModal')" class="h-8 px-3 text-xs font-medium text-zinc-700 bg-white border border-zinc-300 rounded-md hover:bg-zinc-50 transition inline-flex items-center gap-1.5">
-            <svg class="w-3.5 h-3.5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 4v16m8-8H4"></path>
-            </svg>
-            <span class="hidden sm:inline">Hasta Ekle</span>
-          </button>
-
-          <button onclick="openExcelModal()" class="h-8 px-3 text-xs font-medium text-white bg-zinc-900 hover:bg-zinc-800 rounded-md transition inline-flex items-center gap-1.5">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-            </svg>
-            <span>Excel Yükle</span>
-          </button>
-
-          <div class="h-4 w-px bg-zinc-200 mx-1"></div>
-
-          <span id="userEmailBadge" class="hidden lg:inline-block mono text-[11px] text-zinc-500"></span>
-          <button onclick="handleLogout()" title="Oturumu Kapat" class="h-8 w-8 flex items-center justify-center text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-md transition">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-            </svg>
+      <!-- Çizim/İmza Alanı -->
+      <div class="p-6 space-y-2.5">
+        <div class="flex items-center justify-between text-xs">
+          <span class="font-bold text-slate-700 flex items-center gap-1.5">
+            <i data-lucide="pen" class="w-3.5 h-3.5 text-vesta-700"></i>
+            Hasta / Vasi Dijital İmzası
+          </span>
+          <button type="button" onclick="clearSignature()" class="text-rose-600 hover:text-rose-700 font-semibold flex items-center gap-1">
+            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Temizle
           </button>
         </div>
-      </div>
-    </header>
 
-    <!-- ANA İÇERİK ALANI -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex-1 w-full space-y-4">
-
-      <!-- METRİK ŞERİDİ -->
-      <div class="bg-white border border-zinc-200 rounded-lg grid grid-cols-1 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-zinc-200">
-        <div class="p-4">
-          <div class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Toplam Hasta</div>
-          <div id="statTotal" class="mt-1 text-2xl font-semibold text-zinc-900 tabular">0</div>
-        </div>
-
-        <div class="p-4">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Onam İmzalayan</span>
-            <span id="statSignedPct" class="mono text-[11px] font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">%0</span>
-          </div>
-          <div id="statSigned" class="mt-1 text-2xl font-semibold text-emerald-600 tabular">0</div>
-        </div>
-
-        <div class="p-4">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Onam İmzalamayan</span>
-            <span id="statUnsignedPct" class="mono text-[11px] font-medium text-red-700 bg-red-50 px-1.5 py-0.5 rounded">%0</span>
-          </div>
-          <div id="statUnsigned" class="mt-1 text-2xl font-semibold text-red-600 tabular">0</div>
-        </div>
-
-        <div class="p-4 flex flex-col justify-between">
-          <div class="flex items-center justify-between text-[11px] font-medium text-zinc-500">
-            <span>Tamamlanma</span>
-            <span id="progressBarLabel" class="mono tabular">0 / 0</span>
-          </div>
-          <div class="w-full h-1.5 bg-zinc-100 rounded-full overflow-hidden mt-2">
-            <div id="progressBarFill" class="h-full bg-zinc-900 transition-all duration-300" style="width: 0%"></div>
+        <div class="border-2 border-dashed border-slate-300 rounded-xl bg-slate-50/50 overflow-hidden relative h-40">
+          <canvas id="signaturePad" class="signature-canvas w-full h-full"></canvas>
+          <div id="signaturePrompt" class="pointer-events-none absolute inset-0 flex items-center justify-center text-slate-400 text-xs font-medium">
+            Dokunarak veya fare ile buraya imzalayınız
           </div>
         </div>
       </div>
 
-      <!-- FİLTRE VE ARAMA ÇUBUĞU -->
-      <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        <!-- Arama -->
-        <div class="relative flex-1">
-          <svg class="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-          </svg>
-          <input
-            id="searchInput"
-            type="text"
-            placeholder="Hasta adı veya soyadı ile ara..."
-            oninput="handleSearch()"
-            class="w-full h-9 pl-9 pr-16 bg-white border border-zinc-300 rounded-md text-xs text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 transition"
-          />
-          <div class="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
-            <button id="clearSearchBtn" onclick="clearSearch()" class="hidden text-zinc-400 hover:text-zinc-700 p-0.5">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-              </svg>
-            </button>
-            <kbd class="hidden sm:inline-block mono text-[10px] text-zinc-400 bg-zinc-100 border border-zinc-200 rounded px-1.5 py-0.5">⌘K</kbd>
-          </div>
-        </div>
-
-        <!-- Sekmeler & Sıralama -->
-        <div class="flex items-center gap-2">
-          <div class="inline-flex h-9 bg-zinc-200/70 p-0.5 rounded-md">
-            <button onclick="setFilter('all')" id="filter-all" class="px-3 text-xs font-medium rounded-[5px] bg-white text-zinc-900 shadow-2xs transition">
-              Tümü
-            </button>
-            <button onclick="setFilter('signed')" id="filter-signed" class="px-3 text-xs font-medium rounded-[5px] text-zinc-600 hover:text-zinc-900 transition">
-              İmzaladı
-            </button>
-            <button onclick="setFilter('unsigned')" id="filter-unsigned" class="px-3 text-xs font-medium rounded-[5px] text-zinc-600 hover:text-zinc-900 transition">
-              İmzalamadı
-            </button>
-          </div>
-
-          <select id="sortSelect" onchange="renderList(true)" class="h-9 px-2.5 bg-white border border-zinc-300 rounded-md text-xs font-medium text-zinc-700 focus:outline-none focus:border-zinc-900">
-            <option value="name-asc">A → Z Sırala</option>
-            <option value="name-desc">Z → A Sırala</option>
-            <option value="updated-desc">Son İşlem</option>
-          </select>
-
-          <button onclick="forceFullSync()" title="Sunucuyla Yeniden Eşitle" class="h-9 w-9 flex items-center justify-center bg-white border border-zinc-300 rounded-md text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 transition">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-            </svg>
-          </button>
-        </div>
+      <!-- Modal Aksiyonları -->
+      <div class="px-6 py-3.5 bg-slate-50 rounded-b-2xl border-t border-slate-100 flex items-center justify-end gap-2.5">
+        <button onclick="closeModal('consentModal')" class="px-4 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold">
+          Vazgeç
+        </button>
+        <button onclick="saveSignatureAndConsent()" class="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-95">
+          <i data-lucide="check" class="w-4 h-4"></i>
+          Onamı Tamamla ve Kaydet
+        </button>
       </div>
 
-      <!-- VERİ TABLOSU -->
-      <div class="bg-white border border-zinc-200 rounded-lg overflow-hidden">
-        <div class="px-4 py-2.5 bg-zinc-50/80 border-b border-zinc-200 flex items-center justify-between text-[11px] font-medium text-zinc-500">
-          <span id="resultCountText" class="tabular">0 kayıt</span>
-          <span>Durumu değiştirmek için satırdaki işlem butonunu kullanın</span>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="border-b border-zinc-200 text-[11px] font-medium text-zinc-500 uppercase tracking-wider bg-zinc-50/40">
-                <th class="py-2.5 px-4 w-14">#</th>
-                <th class="py-2.5 px-4">Hasta Adı Soyadı</th>
-                <th class="py-2.5 px-4 w-52">Onam Durumu</th>
-                <th class="py-2.5 px-4 w-44 hidden md:table-cell">Son Güncelleme</th>
-                <th class="py-2.5 px-4 w-44 text-right">İşlem</th>
-              </tr>
-            </thead>
-            <tbody id="patientTableBody" class="divide-y divide-zinc-200/70 text-xs">
-              <tr>
-                <td colspan="5" class="py-12 text-center text-zinc-400">Veriler yükleniyor...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div id="loadMoreContainer" class="hidden p-3 bg-zinc-50 border-t border-zinc-200 text-center">
-          <button onclick="loadMoreRows()" class="h-8 px-4 text-xs font-medium text-zinc-700 bg-white hover:bg-zinc-100 border border-zinc-300 rounded-md transition tabular">
-            Daha Fazla Yükle (<span id="remainingCount">0</span> kayıt kaldı)
-          </button>
-        </div>
-      </div>
-    </main>
-  </div>
-
-  <!-- TEK HASTA EKLEME MODALI -->
-  <div id="singleModal" class="fixed inset-0 bg-zinc-950/40 z-50 hidden items-center justify-center p-4">
-    <div class="bg-white rounded-lg max-w-md w-full border border-zinc-200 shadow-lg overflow-hidden">
-      <div class="px-5 py-4 border-b border-zinc-200 flex items-center justify-between">
-        <h3 class="text-sm font-semibold text-zinc-900">Yeni Hasta Kaydı</h3>
-        <button onclick="closeModal('singleModal')" class="text-zinc-400 hover:text-zinc-700 text-sm">✕</button>
-      </div>
-      <div class="p-5 space-y-4">
-        <div>
-          <label class="block text-xs font-medium text-zinc-700 mb-1.5">Ad Soyad</label>
-          <input id="singleNameInput" type="text" placeholder="Örn: Ahmet Yılmaz" class="w-full h-9 px-3 border border-zinc-300 rounded-md text-sm focus:outline-none focus:border-zinc-900" />
-        </div>
-        <div>
-          <label class="block text-xs font-medium text-zinc-700 mb-1.5">Onam Formu Durumu</label>
-          <select id="singleStatusInput" class="w-full h-9 px-3 border border-zinc-300 rounded-md text-sm bg-white focus:outline-none focus:border-zinc-900">
-            <option value="false">Onam Formu İmzalamadı</option>
-            <option value="true">Onam Formu İmzaladı</option>
-          </select>
-        </div>
-      </div>
-      <div class="px-5 py-3 bg-zinc-50 border-t border-zinc-200 flex justify-end gap-2">
-        <button onclick="closeModal('singleModal')" class="h-8 px-3 text-xs font-medium text-zinc-600 hover:bg-zinc-200/60 rounded-md">İptal</button>
-        <button onclick="addSinglePatient()" id="singleSubmitBtn" class="h-8 px-4 text-xs font-medium text-white bg-zinc-900 hover:bg-zinc-800 rounded-md">Kaydet</button>
-      </div>
     </div>
   </div>
 
-  <!-- EXCEL (.XLSX / .XLS / .CSV) YÜKLEME MODALI -->
-  <div id="excelModal" class="fixed inset-0 bg-zinc-950/40 z-50 hidden items-center justify-center p-4">
-    <div class="bg-white rounded-lg max-w-2xl w-full border border-zinc-200 shadow-lg flex flex-col max-h-[90vh] overflow-hidden">
-      <div class="px-5 py-4 border-b border-zinc-200 flex items-center justify-between">
+  <!-- ==================== MODAL: ONAYLI BELGE GÖRÜNTÜLEYİCİ & YAZDIRMA ==================== -->
+  <div id="viewModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 no-print">
+    <div class="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <div class="flex items-center gap-2.5">
+          <div class="p-2 rounded-lg bg-emerald-50 text-emerald-600"><i data-lucide="file-check-2" class="w-5 h-5"></i></div>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900" id="viewPatientName">Hasta Adı</h3>
+            <p class="text-[11px] text-slate-400">Arşivlenmiş Dijital Belge</p>
+          </div>
+        </div>
+        <button onclick="closeModal('viewModal')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <div class="p-6 space-y-4 overflow-y-auto">
+        <div class="p-3.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-1">
+          <p><strong>Kayıt Protokol No:</strong> <span id="viewPatientId" class="font-mono text-slate-800"></span></p>
+          <p><strong>Onay Zamanı:</strong> <span id="viewPatientDate" class="text-slate-800"></span></p>
+          <p><strong>Onay Türü:</strong> Aydınlatılmış Hasta Onamı & KVKK Metni</p>
+        </div>
+
         <div>
-          <h3 class="text-sm font-semibold text-zinc-900">Excel Dosyasından Hasta Aktar</h3>
-          <p class="text-xs text-zinc-500 mt-0.5">.xlsx, .xls veya .csv dosyanızı seçin ve hasta isim sütununu eşleştirin.</p>
-        </div>
-        <button onclick="closeModal('excelModal')" class="text-zinc-400 hover:text-zinc-700 text-sm">✕</button>
-      </div>
-
-      <div class="p-5 space-y-4 overflow-y-auto flex-1">
-        <!-- Dosya Seçim Alanı -->
-        <div
-          id="dropZone"
-          onclick="document.getElementById('excelFileInput').click()"
-          class="border border-dashed border-zinc-300 hover:border-zinc-900 bg-zinc-50/60 hover:bg-zinc-50 rounded-lg p-6 text-center cursor-pointer transition"
-        >
-          <input id="excelFileInput" type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleExcelFileSelect(event)" />
-          <svg class="w-6 h-6 text-zinc-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-          </svg>
-          <p id="selectedFileName" class="text-xs font-medium text-zinc-800">Excel dosyasını buraya bırakın veya seçmek için tıklayın</p>
-          <p class="text-[11px] text-zinc-400 mt-1">Desteklenen formatlar: .xlsx, .xls, .csv (6.000+ satır destekli)</p>
-        </div>
-
-        <!-- Sütun Eşleştirme ve Önizleme (Dosya seçilince açılır) -->
-        <div id="excelConfigPanel" class="hidden space-y-4">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-zinc-50 p-3.5 rounded-md border border-zinc-200">
-            <div>
-              <label class="block text-[11px] font-medium text-zinc-700 mb-1">Ad / Ad Soyad Sütunu</label>
-              <select id="colPrimarySelect" onchange="rebuildExcelPreview()" class="w-full h-8 px-2.5 bg-white border border-zinc-300 rounded text-xs focus:outline-none focus:border-zinc-900"></select>
-            </div>
-            <div>
-              <label class="block text-[11px] font-medium text-zinc-700 mb-1">Soyad Sütunu (Ayrıysa seçin)</label>
-              <select id="colSecondarySelect" onchange="rebuildExcelPreview()" class="w-full h-8 px-2.5 bg-white border border-zinc-300 rounded text-xs focus:outline-none focus:border-zinc-900"></select>
-            </div>
-          </div>
-
-          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-1">
-            <label class="flex items-center gap-2 text-xs text-zinc-700 cursor-pointer">
-              <input type="checkbox" id=" hasHeaderCheck" checked onchange="rebuildExcelPreview()" class="rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900" />
-              <span>İlk satır sütun başlığıdır (atla)</span>
-            </label>
-
-            <label class="flex items-center gap-2 text-xs text-zinc-700 cursor-pointer">
-              <input type="checkbox" id="skipDuplicatesCheck" checked onchange="rebuildExcelPreview()" class="rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900" />
-              <span>Sistemde kayıtlı mükerrer isimleri atla</span>
-            </label>
-
-            <select id="bulkDefaultStatus" class="h-8 px-2.5 bg-white border border-zinc-300 rounded text-xs font-medium text-zinc-700">
-              <option value="false">Durum: İmzalamadı</option>
-              <option value="true">Durum: İmzaladı</option>
-            </select>
-          </div>
-
-          <!-- Önizleme Kutusu -->
-          <div class="border border-zinc-200 rounded-md overflow-hidden">
-            <div class="px-3 py-2 bg-zinc-50 border-b border-zinc-200 flex items-center justify-between text-[11px] font-medium text-zinc-600">
-              <span>Aktarılacak Kayıt Önizlemesi</span>
-              <span id="excelSummaryBadge" class="mono font-semibold text-zinc-900">0 yeni hasta</span>
-            </div>
-            <div id="excelPreviewList" class="max-h-36 overflow-y-auto divide-y divide-zinc-100 px-3 py-1 text-xs text-zinc-700 mono"></div>
-          </div>
-        </div>
-
-        <!-- Yükleme İlerleme Çubuğu -->
-        <div id="bulkProgressBox" class="hidden bg-zinc-50 border border-zinc-200 rounded-md p-3.5 space-y-2">
-          <div class="flex justify-between text-xs font-medium text-zinc-800">
-            <span id="bulkProgressStatus">Veritabanına yazılıyor...</span>
-            <span id="bulkProgressNumbers" class="mono tabular">0 / 0</span>
-          </div>
-          <div class="w-full h-1.5 bg-zinc-200 rounded-full overflow-hidden">
-            <div id="bulkProgressBar" class="h-full bg-zinc-900 transition-all duration-150" style="width: 0%"></div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Kayıtlı İmza Örneği</label>
+          <div class="border rounded-xl p-3 bg-white flex items-center justify-center min-h-[120px]">
+            <img id="viewSignatureImg" src="" alt="İmza Yok" class="max-h-28 object-contain" />
           </div>
         </div>
       </div>
 
-      <div class="px-5 py-3 bg-zinc-50 border-t border-zinc-200 flex justify-end gap-2">
-        <button onclick="closeModal('excelModal')" id="bulkCancelBtn" class="h-8 px-3 text-xs font-medium text-zinc-600 hover:bg-zinc-200/60 rounded-md">Kapat</button>
-        <button onclick="startExcelImport()" id="bulkSubmitBtn" disabled class="h-8 px-4 text-xs font-medium text-white bg-zinc-900 hover:bg-zinc-800 disabled:opacity-40 disabled:pointer-events-none rounded-md transition">
-          Aktarımı Başlat
+      <div class="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+        <button onclick="printOfficialDocument()" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-vesta-800 hover:bg-vesta-900 text-white text-xs font-bold transition-all shadow-xs">
+          <i data-lucide="printer" class="w-4 h-4"></i>
+          Resmi Belgeyi Yazdır / PDF
+        </button>
+        <button onclick="closeModal('viewModal')" class="px-4 py-2 rounded-lg border border-slate-300 bg-white text-slate-700 text-xs font-semibold">
+          Kapat
         </button>
       </div>
     </div>
   </div>
 
-  <!-- BİLDİRİM ÇUBUĞU -->
-  <div id="toast" class="fixed bottom-4 right-4 z-50 hidden bg-zinc-900 text-white px-3.5 py-2.5 rounded-md shadow-lg text-xs font-medium flex items-center gap-2 border border-zinc-800">
-    <span id="toastText">İşlem tamamlandı</span>
+  <!-- ==================== MODAL: MANUEL HASTA EKLE ==================== -->
+  <div id="addPatientModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 no-print">
+    <div class="bg-white rounded-2xl max-w-sm w-full shadow-2xl border border-slate-200 p-6 space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 class="text-base font-bold text-slate-900">Yeni Hasta Kaydı</h3>
+        <button onclick="closeModal('addPatientModal')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Hasta Adı Soyadı</label>
+        <input type="text" id="newPatientInput" placeholder="Örn: Mehmet Özkan" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-vesta-600 focus:bg-white" />
+      </div>
+      <div class="pt-2 flex items-center justify-end gap-2">
+        <button onclick="closeModal('addPatientModal')" class="px-4 py-2 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700">İptal</button>
+        <button onclick="saveNewPatient()" class="px-4 py-2 rounded-lg bg-vesta-800 hover:bg-vesta-900 text-white text-xs font-bold">Kaydet</button>
+      </div>
+    </div>
   </div>
 
-  <!-- FIREBASE & UYGULAMA MANTIĞI -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-    import {
-      getAuth,
-      signInWithEmailAndPassword,
-      signOut,
-      onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-    import {
-      getFirestore,
-      collection,
-      doc,
-      setDoc,
-      updateDoc,
-      deleteDoc,
-      getDocs,
-      query,
-      where,
-      onSnapshot,
-      writeBatch
-    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+  <!-- ==================== MODAL: EXCEL AKTARIM ==================== -->
+  <div id="importModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 no-print">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 p-6 space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 class="text-base font-bold text-slate-900">Toplu Excel / CSV Yükleme</h3>
+        <button onclick="closeModal('importModal')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <p class="text-xs text-slate-500 leading-relaxed">
+        Seçeceğiniz Excel veya CSV dosyasının <strong>ilk sütununda</strong> hastaların Ad ve Soyadı yer almalıdır. Binlerce hasta kaydı güvenli parçalar halinde aktarılır.
+      </p>
+      <div class="border-2 border-dashed border-slate-300 rounded-xl p-5 text-center bg-slate-50">
+        <input type="file" id="excelFilePicker" accept=".xlsx, .xls, .csv" class="text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-vesta-100 file:text-vesta-900 cursor-pointer" />
+      </div>
+      <div class="pt-2 flex items-center justify-end gap-2">
+        <button onclick="closeModal('importModal')" class="px-4 py-2 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700">Kapat</button>
+        <button onclick="executeExcelImport()" class="px-4 py-2 rounded-lg bg-vesta-800 hover:bg-vesta-900 text-white text-xs font-bold">Aktarımı Başlat</button>
+      </div>
+    </div>
+  </div>
 
+  <!-- ==================== RESMİ A4 YAZDIRMA ŞABLONU (GİZLİ) ==================== -->
+  <div id="printContainer" class="hidden">
+    <div class="border-b-2 border-slate-800 pb-4 mb-6 flex items-center justify-between">
+      <div>
+        <h1 class="text-xl font-black tracking-tight text-slate-900">VESTA AĞIZ VE DİŞ SAĞLIĞI POLİKLİNİĞİ</h1>
+        <p class="text-xs text-slate-600">Hasta Bilgilendirilmiş Onam ve Kişisel Veri İşleme Onay Formu</p>
+      </div>
+      <img src="logo.png" alt="Vesta" class="h-16 w-auto object-contain" />
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 text-xs mb-6 border p-3 rounded">
+      <div><strong>Hasta Adı Soyadı:</strong> <span id="printPatientName"></span></div>
+      <div><strong>Protokol Kayıt No:</strong> <span id="printPatientId"></span></div>
+      <div><strong>İşlem Tarihi:</strong> <span id="printPatientDate"></span></div>
+      <div><strong>Belge Durumu:</strong> Islak/Dijital İmzalı Onaylı Kopya</div>
+    </div>
+
+    <div class="text-xs text-slate-700 space-y-3 leading-relaxed text-justify mb-8">
+      <p>Hekimim tarafından ağız, diş ve çene muayenem gerçekleştirilmiş; uygulanması planlanan tedaviler, bu tedavilerin beklenen yararları ve olası riskleri tarafıma açıkça anlatılmıştır.</p>
+      <p>Uygulanacak lokal anestezi ve tıbbi operasyonlara rıza gösterdiğimi, tıbbi geçmişime ilişkin bilgileri doğru ve eksiksiz beyan ettiğimi, 6698 sayılı KVKK kapsamında sağlık kayıtlarımın Vesta Klinik tarafından arşivlenmesine muvafakat ettiğimi kabul ve beyan ederim.</p>
+    </div>
+
+    <div class="flex justify-between items-end mt-12 pt-6 border-t">
+      <div class="text-center text-xs">
+        <p class="font-bold">Tedaviyi Yürüten Hekim</p>
+        <p class="text-slate-500 mt-1">Kaşe / İmza</p>
+      </div>
+      <div class="text-center text-xs">
+        <p class="font-bold">Hasta / Yasal Vasi İmzası</p>
+        <div class="mt-2 h-24 flex items-center justify-center">
+          <img id="printSignatureImg" src="" alt="İmza" class="max-h-20" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== JAVASCRIPT & ENTEGRASYON ==================== -->
+  <script>
+    // 1. FIREBASE KONFİGÜRASYONU (Mevcut vesta-klinik bilgilerinizi buraya yapıştırın)
     const firebaseConfig = {
-      apiKey: "AIzaSyDi_c1cBUB34AZLX3YAOsLNMH40T0cPYXU",
+      apiKey: "AIzaSyYOUR_API_KEY_HERE",
       authDomain: "vesta-klinik.firebaseapp.com",
       projectId: "vesta-klinik",
-      storageBucket: "vesta-klinik.firebasestorage.app",
-      messagingSenderId: "297313379397",
-      appId: "1:297313379397:web:381694ffeb97695f122f2c",
-      measurementId: "G-YNW6QFF7XD"
+      storageBucket: "vesta-klinik.appspot.com",
+      messagingSenderId: "1234567890",
+      appId: "1:1234567890:web:abcdef123456"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const patientsCol = collection(db, "patients");
+    let db;
+    let allPatients = [];
+    let activeFilter = 'all';
+    let searchQuery = '';
+    let currentPage = 1;
+    const pageSize = 25;
+    let activeConsentPatient = null;
+    let viewTargetPatient = null;
 
-    let allPatientsMap = new Map();
-    let filteredPatients = [];
-    let currentFilter = "all";
-    let displayLimit = 100;
-    let deltaUnsubscribe = null;
-
-    // Excel Ham Veri Belleği
-    let rawExcelRows = [];
-    let preparedImportNames = [];
-
-    // Klavye kısayolu: Cmd+K / Ctrl+K ile arama kutusuna odaklan
-    window.addEventListener("keydown", (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        const input = document.getElementById("searchInput");
-        if (input) input.focus();
+    // Uygulamayı Başlat
+    try {
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
       }
-    });
-
-    // Sürükle-bırak desteği
-    const dropZone = document.getElementById("dropZone");
-    dropZone.addEventListener("dragover", (e) => {
-      e.preventDefault();
-      dropZone.classList.add("border-zinc-900", "bg-zinc-100");
-    });
-    dropZone.addEventListener("dragleave", () => {
-      dropZone.classList.remove("border-zinc-900", "bg-zinc-100");
-    });
-    dropZone.addEventListener("drop", (e) => {
-      e.preventDefault();
-      dropZone.classList.remove("border-zinc-900", "bg-zinc-100");
-      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-        processExcelFile(e.dataTransfer.files[0]);
-      }
-    });
-
-    // ============================================================================
-    // OTURUM YÖNETİMİ
-    // ============================================================================
-    onAuthStateChanged(auth, async (user) => {
-      document.getElementById("authLoadingScreen").classList.add("hidden");
-      const loginView = document.getElementById("loginView");
-      const appView = document.getElementById("appView");
-
-      if (user) {
-        loginView.classList.add("hidden");
-        appView.classList.remove("hidden");
-        appView.classList.add("flex");
-        document.getElementById("userEmailBadge").textContent = user.email;
-        await initSync();
-      } else {
-        if (deltaUnsubscribe) deltaUnsubscribe();
-        allPatientsMap.clear();
-        appView.classList.add("hidden");
-        appView.classList.remove("flex");
-        loginView.classList.remove("hidden");
-      }
-    });
-
-    window.handleLogin = async function (e) {
-      e.preventDefault();
-      const email = document.getElementById("loginEmail").value.trim();
-      const password = document.getElementById("loginPassword").value;
-      const errorMsg = document.getElementById("loginErrorMsg");
-      const submitBtn = document.getElementById("loginSubmitBtn");
-
-      errorMsg.classList.add("hidden");
-      submitBtn.disabled = true;
-      submitBtn.textContent = "Doğrulanıyor...";
-
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-      } catch (err) {
-        errorMsg.classList.remove("hidden");
-        errorMsg.textContent = "E-posta veya parola hatalı.";
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Oturum Aç";
-      }
-    };
-
-    window.handleLogout = async function () {
-      if (confirm("Oturumu kapatmak istediğinize emin misiniz?")) {
-        await signOut(auth);
-      }
-    };
-
-    // ============================================================================
-    // TÜRKÇE NORMALİZASYON & INDEXEDDB
-    // ============================================================================
-    function normalizeTurkish(str) {
-      if (!str) return "";
-      return String(str)
-        .trim()
-        .toLocaleLowerCase("tr-TR")
-        .replace(/ğ/g, "g")
-        .replace(/ü/g, "u")
-        .replace(/ş/g, "s")
-        .replace(/ı/g, "i")
-        .replace(/i̇/g, "i")
-        .replace(/ö/g, "o")
-        .replace(/ç/g, "c")
-        .replace(/\s+/g, " ");
+      db = firebase.firestore();
+      syncFirestore();
+    } catch (e) {
+      console.warn("Firebase doğrudan açılamadı, yerel güvenli mod aktif:", e);
+      loadMockPatients();
     }
 
-    const IDB_NAME = "VestaOnamCacheDB_v2";
-    const IDB_STORE = "patientsStore";
+    // Canlı Firestore Dinleme (Real-time listener)
+    function syncFirestore() {
+      db.collection("patients").onSnapshot((snapshot) => {
+        allPatients = [];
+        snapshot.forEach((doc) => {
+          allPatients.push({ id: doc.id, ...doc.data() });
+        });
 
-    function openLocalDB() {
-      return new Promise((resolve, reject) => {
-        const req = indexedDB.open(IDB_NAME, 1);
-        req.onupgradeneeded = (e) => {
-          const idb = e.target.result;
-          if (!idb.objectStoreNames.contains(IDB_STORE)) {
-            idb.createObjectStore(IDB_STORE, { keyPath: "id" });
-          }
-        };
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
+        // En son işlem görenden eskiye sırala
+        allPatients.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+        
+        refreshStats();
+        renderTable();
+      }, (err) => {
+        console.error("Firestore bağlantı hatası:", err);
       });
     }
 
-    async function loadFromLocalDB() {
-      try {
-        const idb = await openLocalDB();
-        return new Promise((resolve) => {
-          const tx = idb.transaction(IDB_STORE, "readonly");
-          const req = tx.objectStore(IDB_STORE).getAll();
-          req.onsuccess = () => resolve(req.result || []);
-          req.onerror = () => resolve([]);
-        });
-      } catch {
-        return [];
-      }
-    }
-
-    async function saveManyToLocalDB(items) {
-      if (!items.length) return;
-      try {
-        const idb = await openLocalDB();
-        const tx = idb.transaction(IDB_STORE, "readwrite");
-        const store = tx.objectStore(IDB_STORE);
-        for (const item of items) store.put(item);
-      } catch {}
-    }
-
-    async function removeFromLocalDB(id) {
-      try {
-        const idb = await openLocalDB();
-        const tx = idb.transaction(IDB_STORE, "readwrite");
-        tx.objectStore(IDB_STORE).delete(id);
-      } catch {}
-    }
-
-    async function clearLocalDB() {
-      try {
-        const idb = await openLocalDB();
-        const tx = idb.transaction(IDB_STORE, "readwrite");
-        tx.objectStore(IDB_STORE).clear();
-        localStorage.removeItem("vesta_sync_ts_v2");
-      } catch {}
-    }
-
-    // ============================================================================
-    // SENKRONİZASYON
-    // ============================================================================
-    async function initSync() {
-      setSyncStatus("loading", "Senkronize ediliyor...");
-      const cachedList = await loadFromLocalDB();
-      let lastSync = Number(localStorage.getItem("vesta_sync_ts_v2") || 0);
-
-      if (cachedList.length > 0 && lastSync > 0) {
-        for (const p of cachedList) allPatientsMap.set(p.id, p);
-        updateStatsAndRender();
-        setSyncStatus("online", `${allPatientsMap.size.toLocaleString("tr-TR")} kayıt aktif`);
-        listenDeltaChanges(lastSync);
-      } else {
-        await performInitialFullFetch();
-      }
-    }
-
-    async function performInitialFullFetch() {
-      try {
-        setSyncStatus("loading", "Kayıtlar indiriliyor...");
-        const snap = await getDocs(patientsCol);
-        const fetched = [];
-        let maxTs = Date.now();
-
-        allPatientsMap.clear();
-        snap.forEach((docSnap) => {
-          const data = docSnap.data();
-          const patient = {
-            id: docSnap.id,
-            fullName: data.fullName || "",
-            searchKey: normalizeTurkish(data.fullName || ""),
-            signed: Boolean(data.signed),
-            updatedAt: data.updatedAt || 0
-          };
-          if (patient.updatedAt > maxTs) maxTs = patient.updatedAt;
-          allPatientsMap.set(patient.id, patient);
-          fetched.push(patient);
-        });
-
-        await saveManyToLocalDB(fetched);
-        localStorage.setItem("vesta_sync_ts_v2", String(maxTs));
-        updateStatsAndRender();
-        setSyncStatus("online", `${allPatientsMap.size.toLocaleString("tr-TR")} kayıt aktif`);
-        listenDeltaChanges(maxTs);
-      } catch (err) {
-        console.error(err);
-        setSyncStatus("error", "Bağlantı hatası");
-      }
-    }
-
-    function listenDeltaChanges(sinceTimestamp) {
-      if (deltaUnsubscribe) deltaUnsubscribe();
-      const q = query(patientsCol, where("updatedAt", ">", sinceTimestamp));
-      deltaUnsubscribe = onSnapshot(q, async (snapshot) => {
-        if (snapshot.empty) return;
-        const changedItems = [];
-        let newestTs = Number(localStorage.getItem("vesta_sync_ts_v2") || sinceTimestamp);
-
-        snapshot.docChanges().forEach((change) => {
-          const data = change.doc.data();
-          const item = {
-            id: change.doc.id,
-            fullName: data.fullName || "",
-            searchKey: normalizeTurkish(data.fullName || ""),
-            signed: Boolean(data.signed),
-            updatedAt: data.updatedAt || Date.now()
-          };
-          if (item.updatedAt > newestTs) newestTs = item.updatedAt;
-
-          if (change.type === "removed") {
-            allPatientsMap.delete(item.id);
-            removeFromLocalDB(item.id);
-          } else {
-            allPatientsMap.set(item.id, item);
-            changedItems.push(item);
-          }
-        });
-
-        if (changedItems.length > 0) await saveManyToLocalDB(changedItems);
-        localStorage.setItem("vesta_sync_ts_v2", String(newestTs));
-        updateStatsAndRender(false);
-        setSyncStatus("online", `${allPatientsMap.size.toLocaleString("tr-TR")} kayıt aktif`);
-      });
-    }
-
-    window.forceFullSync = async function () {
-      await clearLocalDB();
-      await performInitialFullFetch();
-      showToast("Veritabanı yeniden eşitlendi");
-    };
-
-    // ============================================================================
-    // HASTA İŞLEMLERİ
-    // ============================================================================
-    window.toggleConsentStatus = async function (patientId) {
-      const existing = allPatientsMap.get(patientId);
-      if (!existing) return;
-
-      const newSigned = !existing.signed;
-      const now = Date.now();
-
-      existing.signed = newSigned;
-      existing.updatedAt = now;
-      allPatientsMap.set(patientId, existing);
-      updateStatsAndRender(false);
-
-      try {
-        await updateDoc(doc(db, "patients", patientId), {
-          signed: newSigned,
-          updatedAt: now
-        });
-        await saveManyToLocalDB([existing]);
-        showToast(`${existing.fullName} → ${newSigned ? "Onam İmzaladı" : "İmzalamadı"}`);
-      } catch (err) {
-        existing.signed = !newSigned;
-        allPatientsMap.set(patientId, existing);
-        updateStatsAndRender(false);
-        showToast("Hata: Güncelleme kaydedilemedi");
-      }
-    };
-
-    window.deletePatient = async function (patientId) {
-      const existing = allPatientsMap.get(patientId);
-      if (!existing) return;
-      if (!confirm(`"${existing.fullName}" kaydını silmek istediğinize emin misiniz?`)) return;
-
-      try {
-        await deleteDoc(doc(db, "patients", patientId));
-        allPatientsMap.delete(patientId);
-        await removeFromLocalDB(patientId);
-        updateStatsAndRender(false);
-        showToast("Kayıt silindi");
-      } catch {
-        showToast("Silme işlemi başarısız");
-      }
-    };
-
-    window.addSinglePatient = async function () {
-      const nameInput = document.getElementById("singleNameInput");
-      const statusInput = document.getElementById("singleStatusInput");
-      const fullName = nameInput.value.trim().replace(/\s+/g, " ");
-      if (fullName.length < 2) return alert("Geçerli bir ad soyad girin.");
-
-      const btn = document.getElementById("singleSubmitBtn");
-      btn.disabled = true;
-
-      try {
-        const newRef = doc(patientsCol);
-        const now = Date.now();
-        const signed = statusInput.value === "true";
-        const newPatient = {
-          id: newRef.id,
-          fullName,
-          searchKey: normalizeTurkish(fullName),
-          signed,
-          updatedAt: now
-        };
-
-        await setDoc(newRef, { fullName, signed, updatedAt: now });
-        allPatientsMap.set(newPatient.id, newPatient);
-        await saveManyToLocalDB([newPatient]);
-        nameInput.value = "";
-        closeModal("singleModal");
-        updateStatsAndRender(true);
-        showToast("Hasta eklendi");
-      } catch (err) {
-        alert("Kayıt hatası: " + err.message);
-      } finally {
-        btn.disabled = false;
-      }
-    };
-
-    // ============================================================================
-    // DOĞRUDAN EXCEL (.XLSX / .XLS / .CSV) OKUMA VE EŞLEŞTİRME MOTORU
-    // ============================================================================
-    window.openExcelModal = function () {
-      rawExcelRows = [];
-      preparedImportNames = [];
-      document.getElementById("excelFileInput").value = "";
-      document.getElementById("selectedFileName").textContent = "Excel dosyasını buraya bırakın veya seçmek için tıklayın";
-      document.getElementById("excelConfigPanel").classList.add("hidden");
-      document.getElementById("bulkProgressBox").classList.add("hidden");
-      document.getElementById("bulkSubmitBtn").disabled = true;
-      openModal("excelModal");
-    };
-
-    window.handleExcelFileSelect = function (e) {
-      const file = e.target.files[0];
-      if (file) processExcelFile(file);
-    };
-
-    function processExcelFile(file) {
-      document.getElementById("selectedFileName").textContent = `Seçilen Dosya: ${file.name}`;
-      const reader = new FileReader();
-
-      reader.onload = function (evt) {
-        try {
-          const data = new Uint8Array(evt.target.result);
-          const workbook = XLSX.read(data, { type: "array" });
-          const firstSheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[firstSheetName];
-
-          // Tüm satırları 2 boyutlu dizi olarak al
-          const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
-          rawExcelRows = rows.filter((r) => Array.isArray(r) && r.some((cell) => String(cell).trim() !== ""));
-
-          if (rawExcelRows.length === 0) {
-            alert("Seçilen Excel dosyası boş görünüyor.");
-            return;
-          }
-
-          setupColumnSelectors(rawExcelRows[0]);
-          document.getElementById("excelConfigPanel").classList.remove("hidden");
-          rebuildExcelPreview();
-        } catch (err) {
-          console.error(err);
-          alert("Excel dosyası okunamadı. Lütfen geçerli bir .xlsx, .xls veya .csv dosyası seçin.");
-        }
-      };
-
-      reader.readAsArrayBuffer(file);
-    }
-
-    function setupColumnSelectors(firstRow) {
-      const colPrimary = document.getElementById("colPrimarySelect");
-      const colSecondary = document.getElementById("colSecondarySelect");
-      colPrimary.innerHTML = "";
-      colSecondary.innerHTML = `<option value="-1">— Yok (Ad Soyad Tek Sütunda) —</option>`;
-
-      const colCount = Math.max(...rawExcelRows.slice(0, 10).map((r) => r.length), 1);
-
-      let detectedFirstCol = 0;
-      let detectedLastCol = -1;
-
-      for (let i = 0; i < colCount; i++) {
-        const sampleHeader = String(firstRow[i] || `Sütun ${i + 1}`).trim();
-        const normHeader = normalizeTurkish(sampleHeader);
-
-        if (normHeader.includes("ad") && normHeader.includes("soyad")) {
-          detectedFirstCol = i;
-          detectedLastCol = -1;
-        } else if (normHeader === "ad" || normHeader === "adi" || normHeader === "isim" || normHeader === "hasta adi") {
-          detectedFirstCol = i;
-        } else if (normHeader === "soyad" || normHeader === "soyadi") {
-          detectedLastCol = i;
-        }
-
-        const opt1 = document.createElement("option");
-        opt1.value = String(i);
-        opt1.textContent = `Sütun ${String.fromCharCode(65 + i)}: ${sampleHeader.slice(0, 30)}`;
-        colPrimary.appendChild(opt1);
-
-        const opt2 = document.createElement("option");
-        opt2.value = String(i);
-        opt2.textContent = `Sütun ${String.fromCharCode(65 + i)}: ${sampleHeader.slice(0, 30)}`;
-        colSecondary.appendChild(opt2);
-      }
-
-      colPrimary.value = String(detectedFirstCol);
-      colSecondary.value = String(detectedLastCol);
-    }
-
-    window.rebuildExcelPreview = function () {
-      if (!rawExcelRows.length) return;
-
-      const c1 = parseInt(document.getElementById("colPrimarySelect").value, 10);
-      const c2 = parseInt(document.getElementById("colSecondarySelect").value, 10);
-      const hasHeader = document.getElementById(" hasHeaderCheck").checked;
-      const skipDuplicates = document.getElementById("skipDuplicatesCheck").checked;
-
-      const startIndex = hasHeader ? 1 : 0;
-      const existingSet = new Set();
-      if (skipDuplicates) {
-        allPatientsMap.forEach((p) => existingSet.add(p.searchKey));
-      }
-
-      const seenInFile = new Set();
-      preparedImportNames = [];
-
-      for (let i = startIndex; i < rawExcelRows.length; i++) {
-        const row = rawExcelRows[i];
-        const part1 = String(row[c1] ?? "").trim();
-        const part2 = c2 >= 0 ? String(row[c2] ?? "").trim() : "";
-        const combined = `${part1} ${part2}`.trim().replace(/\s+/g, " ");
-
-        if (combined.length < 2 || combined.length > 150) continue;
-
-        const key = normalizeTurkish(combined);
-        if (skipDuplicates && (existingSet.has(key) || seenInFile.has(key))) continue;
-
-        seenInFile.add(key);
-        preparedImportNames.push(combined);
-      }
-
-      document.getElementById("excelSummaryBadge").textContent = `${preparedImportNames.length.toLocaleString("tr-TR")} yeni hasta aktarılacak`;
-
-      const previewContainer = document.getElementById("excelPreviewList");
-      if (preparedImportNames.length === 0) {
-        previewContainer.innerHTML = `<div class="py-4 text-center text-zinc-400">Aktarılacak yeni hasta bulunamadı.</div>`;
-        document.getElementById("bulkSubmitBtn").disabled = true;
-      } else {
-        previewContainer.innerHTML = preparedImportNames
-          .slice(0, 25)
-          .map((name, idx) => `<div class="py-1 flex justify-between"><span>${idx + 1}. ${escapeHtml(name)}</span><span class="text-zinc-400">Hazır</span></div>`)
-          .join("");
-        document.getElementById("bulkSubmitBtn").disabled = false;
-      }
-    };
-
-    window.startExcelImport = async function () {
-      if (preparedImportNames.length === 0) return;
-
-      const defaultSigned = document.getElementById("bulkDefaultStatus").value === "true";
-      const submitBtn = document.getElementById("bulkSubmitBtn");
-      const cancelBtn = document.getElementById("bulkCancelBtn");
-      const progressBox = document.getElementById("bulkProgressBox");
-      const progressBar = document.getElementById("bulkProgressBar");
-      const progressNumbers = document.getElementById("bulkProgressNumbers");
-
-      submitBtn.disabled = true;
-      cancelBtn.disabled = true;
-      progressBox.classList.remove("hidden");
-
-      const CHUNK_SIZE = 450;
-      let uploadedCount = 0;
-      const newlyAdded = [];
-
-      try {
-        for (let i = 0; i < preparedImportNames.length; i += CHUNK_SIZE) {
-          const chunk = preparedImportNames.slice(i, i + CHUNK_SIZE);
-          const batch = writeBatch(db);
-          const now = Date.now();
-
-          for (const fullName of chunk) {
-            const newRef = doc(patientsCol);
-            batch.set(newRef, { fullName, signed: defaultSigned, updatedAt: now });
-            newlyAdded.push({
-              id: newRef.id,
-              fullName,
-              searchKey: normalizeTurkish(fullName),
-              signed: defaultSigned,
-              updatedAt: now
-            });
-          }
-
-          await batch.commit();
-          uploadedCount += chunk.length;
-          const pct = Math.round((uploadedCount / preparedImportNames.length) * 100);
-          progressBar.style.width = `${pct}%`;
-          progressNumbers.textContent = `${uploadedCount.toLocaleString("tr-TR")} / ${preparedImportNames.length.toLocaleString("tr-TR")} (%${pct})`;
-        }
-
-        for (const item of newlyAdded) allPatientsMap.set(item.id, item);
-        await saveManyToLocalDB(newlyAdded);
-        localStorage.setItem("vesta_sync_ts_v2", String(Date.now()));
-
-        updateStatsAndRender(true);
-        showToast(`${uploadedCount.toLocaleString("tr-TR")} hasta başarıyla yüklendi`);
-        setTimeout(() => closeModal("excelModal"), 600);
-      } catch (err) {
-        alert("Aktarım sırasında hata oluştu: " + err.message);
-      } finally {
-        submitBtn.disabled = false;
-        cancelBtn.disabled = false;
-      }
-    };
-
-    // ============================================================================
-    // ARAMA, FİLTRELEME VE TABLO RENDER
-    // ============================================================================
-    window.handleSearch = function () {
-      const val = document.getElementById("searchInput").value;
-      document.getElementById("clearSearchBtn").classList.toggle("hidden", val.length === 0);
-      renderList(true);
-    };
-
-    window.clearSearch = function () {
-      document.getElementById("searchInput").value = "";
-      document.getElementById("clearSearchBtn").classList.add("hidden");
-      renderList(true);
-    };
-
-    window.setFilter = function (filterType) {
-      currentFilter = filterType;
-      ["all", "signed", "unsigned"].forEach((t) => {
-        const btn = document.getElementById(`filter-${t}`);
-        if (t === filterType) {
-          btn.className = "px-3 text-xs font-medium rounded-[5px] bg-white text-zinc-900 shadow-2xs transition";
-        } else {
-          btn.className = "px-3 text-xs font-medium rounded-[5px] text-zinc-600 hover:text-zinc-900 transition";
-        }
-      });
-      renderList(true);
-    };
-
-    window.loadMoreRows = function () {
-      displayLimit += 100;
-      renderTableRows();
-    };
-
-    function updateStatsAndRender(resetLimit = false) {
-      let total = 0;
-      let signedCount = 0;
-
-      allPatientsMap.forEach((p) => {
-        total++;
-        if (p.signed) signedCount++;
-      });
-
-      const unsignedCount = total - signedCount;
-      const signedPct = total > 0 ? Math.round((signedCount / total) * 100) : 0;
-      const unsignedPct = total > 0 ? 100 - signedPct : 0;
+    // Metrikler ve İstatistikler
+    function refreshStats() {
+      const total = allPatients.length;
+      const signed = allPatients.filter(p => p.signed === true).length;
+      const pending = total - signed;
+      const rate = total > 0 ? Math.round((signed / total) * 100) : 0;
 
       document.getElementById("statTotal").textContent = total.toLocaleString("tr-TR");
-      document.getElementById("statSigned").textContent = signedCount.toLocaleString("tr-TR");
-      document.getElementById("statUnsigned").textContent = unsignedCount.toLocaleString("tr-TR");
-      document.getElementById("statSignedPct").textContent = `%${signedPct}`;
-      document.getElementById("statUnsignedPct").textContent = `%${unsignedPct}`;
-      document.getElementById("progressBarLabel").textContent = `${signedCount.toLocaleString("tr-TR")} / ${total.toLocaleString("tr-TR")}`;
-      document.getElementById("progressBarFill").style.width = `${signedPct}%`;
-
-      renderList(resetLimit);
+      document.getElementById("statSigned").textContent = signed.toLocaleString("tr-TR");
+      document.getElementById("statPending").textContent = pending.toLocaleString("tr-TR");
+      document.getElementById("statRate").textContent = `%${rate}`;
+      document.getElementById("statProgressBar").style.width = `${rate}%`;
     }
 
-    window.renderList = function (resetLimit = false) {
-      if (resetLimit) displayLimit = 100;
-
-      const searchKey = normalizeTurkish(document.getElementById("searchInput").value);
-      const sortMode = document.getElementById("sortSelect").value;
-
-      filteredPatients = [];
-
-      allPatientsMap.forEach((p) => {
-        if (currentFilter === "signed" && !p.signed) return;
-        if (currentFilter === "unsigned" && p.signed) return;
-        if (searchKey && !p.searchKey.includes(searchKey)) return;
-        filteredPatients.push(p);
+    // Tablo Filtreleme ve Sayfalama
+    function getFilteredPatients() {
+      return allPatients.filter(p => {
+        const matchesQuery = (p.fullName || '').toLowerCase().includes(searchQuery.toLowerCase().trim());
+        if (activeFilter === 'signed') return matchesQuery && p.signed === true;
+        if (activeFilter === 'pending') return matchesQuery && !p.signed;
+        return matchesQuery;
       });
+    }
 
-      filteredPatients.sort((a, b) => {
-        if (sortMode === "name-asc") return a.fullName.localeCompare(b.fullName, "tr-TR");
-        if (sortMode === "name-desc") return b.fullName.localeCompare(a.fullName, "tr-TR");
-        return (b.updatedAt || 0) - (a.updatedAt || 0);
-      });
+    function renderTable() {
+      const filtered = getFilteredPatients();
+      const total = filtered.length;
+      const totalPages = Math.ceil(total / pageSize) || 1;
+      
+      if (currentPage > totalPages) currentPage = totalPages;
+      if (currentPage < 1) currentPage = 1;
 
-      document.getElementById("resultCountText").textContent = `${filteredPatients.length.toLocaleString("tr-TR")} kayıt gösteriliyor`;
-      renderTableRows();
-    };
+      const startIndex = (currentPage - 1) * pageSize;
+      const currentList = filtered.slice(startIndex, startIndex + pageSize);
 
-    function renderTableRows() {
       const tbody = document.getElementById("patientTableBody");
-      const loadMoreContainer = document.getElementById("loadMoreContainer");
 
-      if (filteredPatients.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="py-12 text-center text-zinc-400">Kayıt bulunamadı.</td></tr>`;
-        loadMoreContainer.classList.add("hidden");
+      if (total === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="4" class="py-14 text-center text-slate-400 text-xs">
+              <i data-lucide="user-x" class="w-8 h-8 mx-auto mb-2 text-slate-300"></i>
+              Kriterlere uygun kayıt bulunamadı.
+            </td>
+          </tr>
+        `;
+        document.getElementById("pageInfo").textContent = "0 kayıttan 0 gösteriliyor";
+        document.getElementById("currentPageBadge").textContent = "1";
+        document.getElementById("btnPrevPage").disabled = true;
+        document.getElementById("btnNextPage").disabled = true;
+        lucide.createIcons();
         return;
       }
 
-      const slice = filteredPatients.slice(0, displayLimit);
-      tbody.innerHTML = slice
-        .map((p, idx) => {
-          const dateStr = p.updatedAt
-            ? new Date(p.updatedAt).toLocaleString("tr-TR", {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit"
-              })
-            : "—";
+      tbody.innerHTML = currentList.map(p => {
+        const isSigned = p.signed === true;
+        const initials = (p.fullName || 'H').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+        const dateStr = p.updatedAt ? new Date(p.updatedAt).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
 
-          const statusBadge = p.signed
-            ? `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                 Onam Formu İmzaladı
-               </span>`
-            : `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium bg-red-50 text-red-700 border border-red-200">
-                 <span class="w-1.5 h-1.5 rounded-full bg-red-600"></span>
-                 Onam Formu İmzalamadı
-               </span>`;
-
-          const actionBtn = p.signed
-            ? `<button onclick="toggleConsentStatus('${p.id}')" class="h-7 px-2.5 text-[11px] font-medium text-zinc-700 bg-white hover:bg-zinc-100 border border-zinc-300 rounded transition">
-                 İmzalamadı Yap
-               </button>`
-            : `<button onclick="toggleConsentStatus('${p.id}')" class="h-7 px-2.5 text-[11px] font-medium text-white bg-zinc-900 hover:bg-zinc-800 rounded transition">
-                 İmzaladı İşaretle
-               </button>`;
-
-          return `
-            <tr class="hover:bg-zinc-50/80 transition group">
-              <td class="py-2.5 px-4 mono text-[11px] text-zinc-400 tabular">${idx + 1}</td>
-              <td class="py-2.5 px-4 font-medium text-zinc-900">${escapeHtml(p.fullName)}</td>
-              <td class="py-2.5 px-4">${statusBadge}</td>
-              <td class="py-2.5 px-4 mono text-[11px] text-zinc-500 hidden md:table-cell tabular">${dateStr}</td>
-              <td class="py-2.5 px-4 text-right">
-                <div class="inline-flex items-center gap-1.5">
-                  ${actionBtn}
-                  <button onclick="deletePatient('${p.id}')" title="Sil" class="h-7 w-7 inline-flex items-center justify-center text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded transition">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                    </svg>
-                  </button>
+        return `
+          <tr class="hover:bg-slate-50/75 transition-colors group">
+            <td class="py-3 px-4 sm:px-6">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-vesta-100 text-vesta-800 font-bold text-xs flex items-center justify-center shrink-0">
+                  ${initials}
                 </div>
-              </td>
-            </tr>
-          `;
-        })
-        .join("");
+                <div>
+                  <span class="font-bold text-slate-800 text-sm block group-hover:text-vesta-800 transition-colors">${p.fullName}</span>
+                  <span class="text-[11px] text-slate-400 font-mono">ID: ${p.id.slice(0, 8)}</span>
+                </div>
+              </div>
+            </td>
+            <td class="py-3 px-4 sm:px-6">
+              ${isSigned ? `
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> İmzalandı
+                </span>
+              ` : `
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200/80">
+                  <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Bekliyor
+                </span>
+              `}
+            </td>
+            <td class="py-3 px-4 sm:px-6 text-xs text-slate-500 hidden md:table-cell">
+              ${dateStr}
+            </td>
+            <td class="py-3 px-4 sm:px-6 text-right">
+              ${!isSigned ? `
+                <button onclick="launchConsentModal('${p.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-vesta-800 hover:bg-vesta-900 text-white text-xs font-bold transition-all active:scale-95">
+                  <i data-lucide="pen-tool" class="w-3.5 h-3.5"></i>
+                  <span>İmzalattır</span>
+                </button>
+              ` : `
+                <button onclick="launchViewModal('${p.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold transition-all">
+                  <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-500"></i>
+                  <span>Belgeyi Gör</span>
+                </button>
+              `}
+            </td>
+          </tr>
+        `;
+      }).join('');
 
-      const remaining = filteredPatients.length - displayLimit;
-      if (remaining > 0) {
-        document.getElementById("remainingCount").textContent = remaining.toLocaleString("tr-TR");
-        loadMoreContainer.classList.remove("hidden");
-      } else {
-        loadMoreContainer.classList.add("hidden");
+      document.getElementById("pageInfo").textContent = `${total} kayıttan ${startIndex + 1}-${Math.min(startIndex + pageSize, total)} arası`;
+      document.getElementById("currentPageBadge").textContent = `${currentPage} / ${totalPages}`;
+      document.getElementById("btnPrevPage").disabled = (currentPage === 1);
+      document.getElementById("btnNextPage").disabled = (currentPage >= totalPages);
+
+      lucide.createIcons();
+    }
+
+    // Arama & Filtre Kontrolleri
+    function handleSearch() {
+      searchQuery = document.getElementById("searchInput").value;
+      currentPage = 1;
+      renderTable();
+    }
+
+    function setFilter(type) {
+      activeFilter = type;
+      currentPage = 1;
+      const bAll = document.getElementById("btnFilterAll");
+      const bPen = document.getElementById("btnFilterPending");
+      const bSig = document.getElementById("btnFilterSigned");
+
+      [bAll, bPen, bSig].forEach(b => b.className = "px-3.5 py-1.5 rounded-md hover:text-slate-900 transition-all font-medium");
+      if (type === 'all') bAll.className = "px-3.5 py-1.5 rounded-md bg-white text-slate-900 shadow-xs font-bold";
+      if (type === 'pending') bPen.className = "px-3.5 py-1.5 rounded-md bg-white text-slate-900 shadow-xs font-bold";
+      if (type === 'signed') bSig.className = "px-3.5 py-1.5 rounded-md bg-white text-slate-900 shadow-xs font-bold";
+
+      renderTable();
+    }
+
+    function prevPage() { if (currentPage > 1) { currentPage--; renderTable(); } }
+    function nextPage() { currentPage++; renderTable(); }
+
+    // ==================== DİJİTAL İMZA MOTORU ====================
+    const canvas = document.getElementById("signaturePad");
+    const ctx = canvas.getContext("2d");
+    let isDrawing = false;
+    let hasSignature = false;
+
+    function initCanvasResolution() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * 2;
+      canvas.height = rect.height * 2;
+      ctx.scale(2, 2);
+      ctx.lineWidth = 2.2;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = "#0f172a";
+    }
+
+    function getCanvasCoords(e) {
+      const rect = canvas.getBoundingClientRect();
+      const cx = e.touches ? e.touches[0].clientX : e.clientX;
+      const cy = e.touches ? e.touches[0].clientY : e.clientY;
+      return { x: cx - rect.left, y: cy - rect.top };
+    }
+
+    function startSign(e) {
+      isDrawing = true;
+      hasSignature = true;
+      document.getElementById("signaturePrompt").style.display = "none";
+      const { x, y } = getCanvasCoords(e);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+    }
+
+    function moveSign(e) {
+      if (!isDrawing) return;
+      const { x, y } = getCanvasCoords(e);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    }
+
+    function endSign() { isDrawing = false; }
+
+    function clearSignature() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      hasSignature = false;
+      document.getElementById("signaturePrompt").style.display = "flex";
+    }
+
+    // Çizim Dinleyicileri (Mouse + Dokunmatik)
+    canvas.addEventListener("mousedown", startSign);
+    canvas.addEventListener("mousemove", moveSign);
+    window.addEventListener("mouseup", endSign);
+    canvas.addEventListener("touchstart", (e) => { e.preventDefault(); startSign(e); }, { passive: false });
+    canvas.addEventListener("touchmove", (e) => { e.preventDefault(); moveSign(e); }, { passive: false });
+    canvas.addEventListener("touchend", endSign);
+
+    // Modal Yönetimleri
+    function openModal(id) { document.getElementById(id).classList.remove("hidden"); }
+    function closeModal(id) { document.getElementById(id).classList.add("hidden"); }
+
+    function launchConsentModal(id) {
+      activeConsentPatient = allPatients.find(p => p.id === id);
+      if (!activeConsentPatient) return;
+      document.getElementById("consentModalPatientName").textContent = activeConsentPatient.fullName;
+      openModal("consentModal");
+      setTimeout(() => {
+        initCanvasResolution();
+        clearSignature();
+      }, 80);
+    }
+
+    async function saveSignatureAndConsent() {
+      if (!hasSignature) {
+        alert("Lütfen formun geçerli olması için imza alanını doldurunuz.");
+        return;
+      }
+
+      const signatureBase64 = canvas.toDataURL("image/png");
+      const updateData = {
+        signed: true,
+        updatedAt: Date.now(),
+        signatureImage: signatureBase64
+      };
+
+      try {
+        if (db) {
+          await db.collection("patients").doc(activeConsentPatient.id).update(updateData);
+        } else {
+          Object.assign(activeConsentPatient, updateData);
+          refreshStats();
+          renderTable();
+        }
+        closeModal("consentModal");
+      } catch (err) {
+        alert("Kayıt güncellenirken hata oluştu: " + err.message);
       }
     }
 
-    // ============================================================================
-    // GERÇEK EXCEL (.XLSX) DIŞA AKTARMA
-    // ============================================================================
-    window.exportExcel = function () {
-      if (filteredPatients.length === 0) return alert("Dışa aktarılacak kayıt yok.");
+    // Onaylı Belge Görüntüleme & A4 Hazırlığı
+    function launchViewModal(id) {
+      viewTargetPatient = allPatients.find(p => p.id === id);
+      if (!viewTargetPatient) return;
 
-      const rows = filteredPatients.map((p, idx) => ({
-        "Sıra": idx + 1,
+      document.getElementById("viewPatientName").textContent = viewTargetPatient.fullName;
+      document.getElementById("viewPatientId").textContent = viewTargetPatient.id;
+      document.getElementById("viewPatientDate").textContent = viewTargetPatient.updatedAt ? new Date(viewTargetPatient.updatedAt).toLocaleString("tr-TR") : "-";
+      document.getElementById("viewSignatureImg").src = viewTargetPatient.signatureImage || "";
+
+      openModal("viewModal");
+    }
+
+    function printOfficialDocument() {
+      if (!viewTargetPatient) return;
+
+      document.getElementById("printPatientName").textContent = viewTargetPatient.fullName;
+      document.getElementById("printPatientId").textContent = viewTargetPatient.id;
+      document.getElementById("printPatientDate").textContent = viewTargetPatient.updatedAt ? new Date(viewTargetPatient.updatedAt).toLocaleString("tr-TR") : "-";
+      document.getElementById("printSignatureImg").src = viewTargetPatient.signatureImage || "";
+
+      window.print();
+    }
+
+    // Yeni Hasta Manuel Ekle
+    async function saveNewPatient() {
+      const input = document.getElementById("newPatientInput");
+      const name = input.value.trim();
+      if (!name) return;
+
+      const newRecord = {
+        fullName: name,
+        signed: false,
+        updatedAt: Date.now()
+      };
+
+      if (db) {
+        await db.collection("patients").add(newRecord);
+      } else {
+        allPatients.unshift({ id: "demo_" + Date.now(), ...newRecord });
+        refreshStats();
+        renderTable();
+      }
+
+      input.value = "";
+      closeModal("addPatientModal");
+    }
+
+    // Excel Toplu Aktarım (Firestore 500 Limit Korumalı)
+    function executeExcelImport() {
+      const fileInput = document.getElementById("excelFilePicker");
+      const file = fileInput.files[0];
+      if (!file) {
+        alert("Lütfen önce bir dosya seçin.");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const data = new Uint8Array(e.target.result);
+        const wb = XLSX.read(data, { type: "array" });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+        let batch = db ? db.batch() : null;
+        let count = 0;
+        let totalImported = 0;
+
+        for (let i = 0; i < rows.length; i++) {
+          const val = rows[i][0];
+          if (!val || typeof val !== "string" || val.trim().length < 2) continue;
+
+          const fullName = val.trim();
+          if (batch) {
+            const ref = db.collection("patients").document();
+            batch.set(ref, {
+              fullName: fullName,
+              signed: false,
+              updatedAt: Date.now()
+            });
+            count++;
+            totalImported++;
+
+            if (count >= 400) {
+              await batch.commit();
+              batch = db.batch();
+              count = 0;
+            }
+          }
+        }
+
+        if (batch && count > 0) {
+          await batch.commit();
+        }
+
+        alert(`${totalImported} adet hasta sisteme başarıyla işlendi.`);
+        closeModal("importModal");
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    // Excel Dışa Aktarma
+    function exportToExcel() {
+      if (allPatients.length === 0) {
+        alert("Dışa aktarılacak hasta bulunmuyor.");
+        return;
+      }
+
+      const rows = allPatients.map(p => ({
+        "Protokol ID": p.id,
         "Hasta Adı Soyadı": p.fullName,
-        "Onam Formu Durumu": p.signed ? "Onam Formu İmzaladı" : "Onam Formu İmzalamadı",
-        "Son İşlem Tarihi": p.updatedAt ? new Date(p.updatedAt).toLocaleString("tr-TR") : "-"
+        "Onam Durumu": p.signed ? "İmzalandı" : "Bekliyor",
+        "Tarih": p.updatedAt ? new Date(p.updatedAt).toLocaleString("tr-TR") : ""
       }));
 
       const ws = XLSX.utils.json_to_sheet(rows);
-      ws["!cols"] = [{ wch: 8 }, { wch: 32 }, { wch: 24 }, { wch: 20 }];
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Hasta Onam Listesi");
-      XLSX.writeFile(wb, `vesta_onam_listesi_${new Date().toISOString().slice(0, 10)}.xlsx`);
-    };
-
-    function escapeHtml(str) {
-      return String(str)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
+      XLSX.utils.book_append_sheet(wb, ws, "Hastalar");
+      XLSX.writeFile(wb, "Vesta_Klinik_Hasta_Listesi.xlsx");
     }
 
-    function setSyncStatus(state, text) {
-      const dot = document.getElementById("syncIndicator");
-      document.getElementById("syncStatusText").textContent = text;
-      dot.className =
-        state === "online"
-          ? "w-1.5 h-1.5 rounded-full bg-emerald-500"
-          : state === "loading"
-          ? "w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"
-          : "w-1.5 h-1.5 rounded-full bg-red-500";
+    // Fallback Demo Verisi
+    function loadMockPatients() {
+      allPatients = [
+        { id: "mock_1", fullName: "Zeynep Kaya", signed: true, updatedAt: Date.now() - 3600000, signatureImage: "" },
+        { id: "mock_2", fullName: "Burak Demir", signed: false, updatedAt: Date.now() - 7200000 },
+        { id: "mock_3", fullName: "Cenk Yılmaz", signed: true, updatedAt: Date.now() - 14400000, signatureImage: "" }
+      ];
+      refreshStats();
+      renderTable();
     }
 
-    let toastTimer = null;
-    function showToast(msg) {
-      const toast = document.getElementById("toast");
-      document.getElementById("toastText").textContent = msg;
-      toast.classList.remove("hidden");
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => toast.classList.add("hidden"), 2800);
-    }
-
-    window.openModal = function (id) {
-      const el = document.getElementById(id);
-      el.classList.remove("hidden");
-      el.classList.add("flex");
-    };
-
-    window.closeModal = function (id) {
-      const el = document.getElementById(id);
-      el.classList.add("hidden");
-      el.classList.remove("flex");
-    };
+    document.addEventListener("DOMContentLoaded", () => {
+      lucide.createIcons();
+    });
   </script>
 </body>
 </html>
